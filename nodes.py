@@ -74,13 +74,34 @@ class ImageBatchOneOrMore:
         s = torch.cat(images, dim=0)
         return (s,)
 
+class ConcatText:
+    """
+    This node will concatenate two strings together
+    """
+    @ classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "text1": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "text2": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "separator": ("STRING", {"multiline": False, "default": ","}),
+        }}
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "fun"
+    CATEGORY = "O/text/operations"
+
+    @ staticmethod
+    def fun(text1, separator, text2):
+        return (text1 + separator + text2,)
 
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
+    "ConcatText": ConcatText,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
+    "ConcatText":"Concat text"
 }
