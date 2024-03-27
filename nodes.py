@@ -88,20 +88,104 @@ class ConcatText:
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
-    CATEGORY = "O/text/operations"
+    CATEGORY = "utils/text/operations"
 
     @ staticmethod
     def fun(text1, separator, text2):
         return (text1 + separator + text2,)
 
+class ConcatText:
+    """
+    This node will concatenate two strings together
+    """
+    @ classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "text1": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "text2": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "separator": ("STRING", {"multiline": False, "default": ","}),
+        }}
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "fun"
+    CATEGORY = "utils/text/operations"
+
+    @ staticmethod
+    def fun(text1, separator, text2):
+        return (text1 + separator + text2,)
+
+
+class ModifyTextGender:
+    """
+    This node will concatenate two strings together
+    """
+    @ classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "text": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "gender": ("STRING", {"default": None}),            
+        },
+        "optional":{
+            "age": ("INT", {"default": -1, "min": -1, "max": 120, "step": 1}),
+             "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+        }}
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "fun"
+    CATEGORY = "utils/text/operations"
+    gender_map = {
+            'M': {
+                'woman': 'man', 'women': 'men', 'madam': 'sir', 'mother': 'father', 'wife': 'husband', 
+                'daughter': 'son', 'girl': 'boy', 'sister': 'brother', 'aunt': 'uncle', 
+                'grandmother': 'grandfather', 'niece': 'nephew', 'bride': 'groom', 
+                'waitress': 'waiter', 'queen': 'king', 'lady': 'gentleman', 
+                'princess': 'prince', 'female': 'male', 'fiancee': 'fiance', 
+                'actress': 'actor', 'heroine': 'hero'
+            },
+        }
+    gender_map['F'] = {value:key for key,value in gender_map['M'].items()}
+
+    @ staticmethod
+    def fun(text, gender, age=-1, enabled=True):
+        if not enabled or text is None or gender is None or gender.upper() not in ModifyTextGender.gender_map:
+            return (text,)
+        result = ModifyTextGender.gender_swap(text, gender)
+        logger.debug(f"ModifyTextGender result:{result}")
+        return (result,)
+    
+    @ staticmethod
+    def gender_swap(text, gender):
+        words = text.split()
+        mappings = ModifyTextGender.gender_map[gender.upper()]
+        for i, word in enumerate(words):
+            masks = ""
+            case = 'lower'
+            original_word = word.lower()    
+            if word.endswith(".") or word.endswith(",") or word.endswith("'") or word.endswith('"') or word.endswith(":"):
+                case = "masks"
+                original_word,  masks= original_word[:-1], original_word[-1]  
+
+            replacement = None    
+            for key,value in mappings.items():
+                if original_word.startswith(key) or original_word.endswith(key):                    
+                    replacement = original_word.replace(key, value)
+                    break
+            if replacement is not None:
+                if case == "masks":
+                    replacement = replacement + masks
+                words[i] = replacement
+        return ' '.join(words)     
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatText": ConcatText,
+    "ModifyTextGender": ModifyTextGender,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
-    "ConcatText":"Concat text"
+    "ConcatText":"Concat text",
+    "ModifyTextGender":"Modify Text's Gender"
 }
