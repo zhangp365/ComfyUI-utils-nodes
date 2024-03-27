@@ -134,16 +134,17 @@ class ModifyTextGender:
     FUNCTION = "fun"
     CATEGORY = "utils/text/operations"
     gender_map = {
-            'M': {
-                'woman': 'man', 'women': 'men', 'madam': 'sir', 'mother': 'father', 'wife': 'husband', 
-                'daughter': 'son', 'girl': 'boy', 'sister': 'brother', 'aunt': 'uncle', 
-                'grandmother': 'grandfather', 'niece': 'nephew', 'bride': 'groom', 
-                'waitress': 'waiter', 'queen': 'king', 'lady': 'gentleman', 
-                'princess': 'prince', 'female': 'male', 'fiancee': 'fiance', 
-                'actress': 'actor', 'heroine': 'hero'
-            },
+        'F': {
+            'man': 'woman', 'men': 'women', 'sir': 'madam', 'father': 'mother', 
+            'husband': 'wife', 'son': 'daughter', 'boy': 'girl', 'brother': 'sister', 
+            'uncle': 'aunt', 'grandfather': 'grandmother', 'nephew': 'niece', 
+            'groom': 'bride', 'waiter': 'waitress', 'king': 'queen', 'gentleman': 'lady', 
+            'prince': 'princess', 'male': 'female', 'fiance': 'fiancee', 
+            'actor': 'actress', 'hero': 'heroine', 'he': 'she', 'his': 'her', 
+            'him': 'her', 'himself': 'herself',"he's": "she's",
         }
-    gender_map['F'] = {value:key for key,value in gender_map['M'].items()}
+        }
+    gender_map['M'] = {value:key for key,value in gender_map['F'].items()}
 
     @ staticmethod
     def fun(text, gender, age=-1, enabled=True):
@@ -167,7 +168,11 @@ class ModifyTextGender:
 
             replacement = None    
             for key,value in mappings.items():
-                if original_word.startswith(key) or original_word.endswith(key):                    
+                if len(key) == 2:
+                    if original_word == key:
+                        replacement = value
+                        break
+                elif original_word.startswith(key) or original_word.endswith(key):                    
                     replacement = original_word.replace(key, value)
                     break
             if replacement is not None:
