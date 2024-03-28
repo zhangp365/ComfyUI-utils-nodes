@@ -11,10 +11,13 @@ import comfy.sample
 import comfy.samplers
 import comfy.diffusers_load
 import torch
-
+import yaml
 import os
 import sys
-
+app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+config_dir = os.path.join(app_dir,"config")
+if not os.path.exists(config_dir):
+    os.makedirs(config_dir)
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "comfy"))
@@ -115,9 +118,52 @@ class ConcatText:
         return (text1 + separator + text2,)
 
 
+
+
+class GenderWordsConfig:
+    file_path = os.path.join(config_dir,"gender_words_config.yaml")
+    if not os.path.exists(file_path):
+        gender_map = {
+                'F': {
+                    'man': 'woman', 'men': 'women', 'sir': 'madam', 'father': 'mother', 
+                    'husband': 'wife', 'son': 'daughter', 'boy': 'girl', 'brother': 'sister', 
+                    'uncle': 'aunt', 'grandfather': 'grandmother', 'nephew': 'niece', 
+                    'groom': 'bride', 'waiter': 'waitress', 'king': 'queen', 'gentleman': 'lady', 
+                    'prince': 'princess', 'male': 'female', 'fiance': 'fiancee', 
+                    'actor': 'actress', 'hero': 'heroine', 'he': 'she', 'his': 'her', 
+                    'him': 'her', 'himself': 'herself',"he's": "she's",
+                }
+            }
+        gender_map['M'] = {value:key for key,value in gender_map['F'].items()}
+        config = {"gender_map": gender_map, "gender_add_words":{"M":["",],"F":[""]}}
+        with open(file_path, 'w') as file:
+            yaml.dump(config, file)
+
+    config = {}
+
+    @staticmethod
+    def load_config():
+        with open(GenderWordsConfig.file_path, 'r') as file:
+            GenderWordsConfig.config = yaml.safe_load(file)
+
+    @staticmethod
+    def get_config():
+        return GenderWordsConfig.config
+
+    @staticmethod
+    def update_config(new_config):
+        GenderWordsConfig.config.update(new_config)
+        GenderWordsConfig.save_config()
+
+    @staticmethod
+    def save_config():
+        with open(GenderWordsConfig.file_path, 'w') as file:
+            yaml.dump(GenderWordsConfig.config, file)
+
+
 class ModifyTextGender:
     """
-    This node will concatenate two strings together
+    This node will modify the prompt string according gender. gender words include M, F
     """
     @ classmethod
     def INPUT_TYPES(cls):
@@ -133,31 +179,30 @@ class ModifyTextGender:
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
     CATEGORY = "utils/text/operations"
-    gender_map = {
-        'F': {
-            'man': 'woman', 'men': 'women', 'sir': 'madam', 'father': 'mother', 
-            'husband': 'wife', 'son': 'daughter', 'boy': 'girl', 'brother': 'sister', 
-            'uncle': 'aunt', 'grandfather': 'grandmother', 'nephew': 'niece', 
-            'groom': 'bride', 'waiter': 'waitress', 'king': 'queen', 'gentleman': 'lady', 
-            'prince': 'princess', 'male': 'female', 'fiance': 'fiancee', 
-            'actor': 'actress', 'hero': 'heroine', 'he': 'she', 'his': 'her', 
-            'him': 'her', 'himself': 'herself',"he's": "she's",
-        }
-        }
-    gender_map['M'] = {value:key for key,value in gender_map['F'].items()}
-
+    GenderWordsConfig.load_config()   
+    
     @ staticmethod
     def fun(text, gender, age=-1, enabled=True):
-        if not enabled or text is None or gender is None or gender.upper() not in ModifyTextGender.gender_map:
+        gender_map = GenderWordsConfig.get_config().get("gender_map",{})
+        if not enabled or text is None or gender is None or gender.upper() not in gender_map:
             return (text,)
-        result = ModifyTextGender.gender_swap(text, gender)
+        result = ModifyTextGender.gender_swap(text, gender, gender_map)
+        
+        result = ModifyTextGender.gender_add_words(result,gender)
         logger.debug(f"ModifyTextGender result:{result}")
         return (result,)
     
     @ staticmethod
-    def gender_swap(text, gender):
+    def gender_add_words(text, gender):
+        gender_add_map = GenderWordsConfig.get_config().get("gender_add_words",{})
+        prefixes = gender_add_map[gender.upper()]
+        result = ", ".join(prefixes + [text])
+        return result
+
+    @ staticmethod
+    def gender_swap(text, gender, gender_map):
         words = text.split()
-        mappings = ModifyTextGender.gender_map[gender.upper()]
+        mappings = gender_map[gender.upper()]
         for i, word in enumerate(words):
             masks = ""
             case = 'lower'
