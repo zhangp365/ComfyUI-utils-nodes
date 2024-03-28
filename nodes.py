@@ -189,7 +189,7 @@ class ModifyTextGender:
         result = ModifyTextGender.gender_swap(text, gender, gender_map)
         
         result = ModifyTextGender.gender_add_words(result,gender)
-        logger.debug(f"ModifyTextGender result:{result}")
+        logger.info(f"ModifyTextGender result:{result}")
         return (result,)
     
     @ staticmethod
