@@ -97,28 +97,6 @@ class ConcatText:
     def fun(text1, separator, text2):
         return (text1 + separator + text2,)
 
-class ConcatText:
-    """
-    This node will concatenate two strings together
-    """
-    @ classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {
-            "text1": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
-            "text2": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
-            "separator": ("STRING", {"multiline": False, "default": ","}),
-        }}
-
-    RETURN_TYPES = ("STRING",)
-    FUNCTION = "fun"
-    CATEGORY = "utils/text/operations"
-
-    @ staticmethod
-    def fun(text1, separator, text2):
-        return (text1 + separator + text2,)
-
-
-
 
 class GenderWordsConfig:
     file_path = os.path.join(config_dir,"gender_words_config.yaml")
