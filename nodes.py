@@ -204,16 +204,36 @@ class ModifyTextGender:
                 words[i] = replacement
         return ' '.join(words)     
 
+
+class IntAndIntAddOffsetLiteral:
+    RETURN_TYPES = ("INT","INT",)
+    RETURN_NAMES = ("int", "int add offset")
+    FUNCTION = "get_int"
+    CATEGORY = "ImageSaverTools/utils"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"int": ("INT", {"default": 0, "min": 0, "max": 1000000})},
+                "optional":{"offset": ("INT", {"default": 1, "step": 1}),}
+                }
+
+    def get_int(self, int, offset):
+        return (int,int + offset)
+    
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatText": ConcatText,
     "ModifyTextGender": ModifyTextGender,
+    "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatText":"Concat text",
-    "ModifyTextGender":"Modify Text's Gender"
+    "ModifyTextGender":"Modify Text Gender",
+    "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal"
 }
