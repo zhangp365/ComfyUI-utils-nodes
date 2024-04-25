@@ -68,7 +68,7 @@ class ImageBatchOneOrMore:
         for other_image in [image2, image3, image4, image5, image6]:
             if other_image is not None:
                 try:
-                    if image1.shape[1:] != image2.shape[1:]:
+                    if image1.shape[1:] != other_image.shape[1:]:
                         other_image = comfy.utils.common_upscale(
                             other_image.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
                     images.append(other_image)
@@ -205,6 +205,41 @@ class ModifyTextGender:
         return ' '.join(words)     
 
 
+class ImageConcanate:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "image1": ("IMAGE",),
+            "image2": ("IMAGE",),
+            "direction": (
+            [   'right',
+                'down',
+                'left',
+                'up',
+            ],
+            {
+            "default": 'right'
+             }),
+        }}
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "concanate"
+    CATEGORY = "KJNodes"
+
+    def concanate(self, image1, image2, direction):
+        if image1.shape[1:] != image2.shape[1:]:
+            image2 = comfy.utils.common_upscale(
+                            image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
+        if direction == 'right':
+            row = torch.cat((image1, image2), dim=2)
+        elif direction == 'down':
+            row = torch.cat((image1, image2), dim=1)
+        elif direction == 'left':
+            row = torch.cat((image2, image1), dim=2)
+        elif direction == 'up':
+            row = torch.cat((image2, image1), dim=1)
+        return (row,)
+
 class IntAndIntAddOffsetLiteral:
     RETURN_TYPES = ("INT","INT",)
     RETURN_NAMES = ("int", "int add offset")
@@ -228,6 +263,7 @@ NODE_CLASS_MAPPINGS = {
     "ConcatText": ConcatText,
     "ModifyTextGender": ModifyTextGender,
     "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
+    "ImageConcanate":ImageConcanate
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -235,5 +271,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatText":"Concat text",
     "ModifyTextGender":"Modify Text Gender",
-    "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal"
+    "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
+    "ImageConcanate":"Image Concanate of utils"
 }
