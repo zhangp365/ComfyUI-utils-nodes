@@ -227,6 +227,8 @@ class ImageConcanate:
     CATEGORY = "KJNodes"
 
     def concanate(self, image1, image2, direction):
+        if not image2:
+            return (image1,)
         if image1.shape[1:] != image2.shape[1:]:
             image2 = comfy.utils.common_upscale(
                             image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
