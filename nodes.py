@@ -16,6 +16,8 @@ import os
 import sys
 import numpy as np
 from PIL import Image, ImageEnhance
+from .color_correct import ColorCorrectOfUtils
+
 
 app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 config_dir = os.path.join(app_dir,"config")
@@ -150,7 +152,7 @@ class ModifyTextGender:
     def INPUT_TYPES(cls):
         return {"required": {
             "text": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
-            "gender": ("STRING", {"default": None}),            
+            "gender": ("STRING", {"placeholder":"please Input M for male, F for female"}),            
         },
         "optional":{
             "age": ("INT", {"default": -1, "min": -1, "max": 120, "step": 1}),
@@ -269,7 +271,8 @@ NODE_CLASS_MAPPINGS = {
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
     "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
-    "ImageConcanateOfUtils":ImageConcanateOfUtils
+    "ImageConcanateOfUtils":ImageConcanateOfUtils,
+    "ColorCorrectOfUtils": ColorCorrectOfUtils,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -279,5 +282,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ModifyTextGender":"Modify Text Gender",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
     "ImageConcanateOfUtils":"Image Concanate of utils",
-    "AdjustColorTemperature": "Adjust color temperature"
+    "AdjustColorTemperature": "Adjust color temperature",
+    "ColorCorrectOfUtils": "Color Correct Of Utils",
 }
