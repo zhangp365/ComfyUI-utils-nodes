@@ -14,6 +14,9 @@ import torch
 import yaml
 import os
 import sys
+import numpy as np
+from PIL import Image, ImageEnhance
+
 app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 config_dir = os.path.join(app_dir,"config")
 if not os.path.exists(config_dir):
@@ -77,7 +80,7 @@ class ImageBatchOneOrMore:
         s = torch.cat(images, dim=0)
         return (s,)
 
-class ConcatText:
+class ConcatTextOfUtils:
     """
     This node will concatenate two strings together
     """
@@ -205,7 +208,7 @@ class ModifyTextGender:
         return ' '.join(words)     
 
 
-class ImageConcanate:
+class ImageConcanateOfUtils:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
@@ -224,7 +227,7 @@ class ImageConcanate:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "concanate"
-    CATEGORY = "KJNodes"
+    CATEGORY = "image"
 
     def concanate(self, image1, image2, direction):
         if image2 is None:
@@ -250,29 +253,31 @@ class IntAndIntAddOffsetLiteral:
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"int": ("INT", {"default": 0, "min": 0, "max": 1000000})},
+        return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
                 "optional":{"offset": ("INT", {"default": 1, "step": 1}),}
                 }
 
-    def get_int(self, int, offset):
-        return (int,int + offset)
+    def get_int(self, number, offset):
+        if number == 0:
+            return(0 ,0)
+        return (number,number + offset)
     
-
-
+   
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
-    "ConcatText": ConcatText,
+    "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
     "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
-    "ImageConcanate":ImageConcanate
+    "ImageConcanateOfUtils":ImageConcanateOfUtils
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
-    "ConcatText":"Concat text",
+    "ConcatTextOfUtils":"Concat text",
     "ModifyTextGender":"Modify Text Gender",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
-    "ImageConcanate":"Image Concanate of utils"
+    "ImageConcanateOfUtils":"Image Concanate of utils",
+    "AdjustColorTemperature": "Adjust color temperature"
 }
