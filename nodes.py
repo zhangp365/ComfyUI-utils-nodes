@@ -273,13 +273,16 @@ class IntMultipleAddLiteral:
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
-                "optional":{"a": ("FLOAT", {"default": 1.0, "step": 0.05}),"b": ("INT", {"default": 1, "step": 1}),}
+                "optional":{ "a_aign":(["positive","negative"],{"default": "positive"}),
+                            "a": ("FLOAT", {"default": 1.0, "step": 0.05}),"b": ("INT", {"default": 1, "step": 1}),
+                           }
                 }
 
-    def get_int(self, number, a, b):
-        return (number, int(a*number + b))
-        
-   
+    def get_int(self, number, a, b, a_aign):
+        if a_aign == "negative":
+            a = - a
+        return (number, int( a*number + b))
+               
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
