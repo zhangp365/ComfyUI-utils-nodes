@@ -251,7 +251,7 @@ class IntAndIntAddOffsetLiteral:
     RETURN_TYPES = ("INT","INT",)
     RETURN_NAMES = ("int", "int add offset")
     FUNCTION = "get_int"
-    CATEGORY = "ImageSaverTools/utils"
+    CATEGORY = "number/utils"
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -263,7 +263,22 @@ class IntAndIntAddOffsetLiteral:
         if number == 0:
             return(0 ,0)
         return (number,number + offset)
-    
+
+class IntMultipleAddLiteral:
+    RETURN_TYPES = ("INT", "INT",)
+    RETURN_NAMES = ("x", "ax + b")
+    FUNCTION = "get_int"
+    CATEGORY = "number/utils"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
+                "optional":{"a": ("FLOAT", {"default": 1.0, "step": 0.05}),"b": ("INT", {"default": 1, "step": 1}),}
+                }
+
+    def get_int(self, number, a, b):
+        return (number, int(a*number + b))
+        
    
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
@@ -271,6 +286,7 @@ NODE_CLASS_MAPPINGS = {
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
     "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
+    "IntMultipleAddLiteral":IntMultipleAddLiteral,
     "ImageConcanateOfUtils":ImageConcanateOfUtils,
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
 }
@@ -281,6 +297,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ConcatTextOfUtils":"Concat text",
     "ModifyTextGender":"Modify Text Gender",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
+    "IntMultipleAddLiteral": "Int Multiple and Add Literal",
     "ImageConcanateOfUtils":"Image Concanate of utils",
     "AdjustColorTemperature": "Adjust color temperature",
     "ColorCorrectOfUtils": "Color Correct Of Utils",
