@@ -17,6 +17,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageEnhance
 from .color_correct import ColorCorrectOfUtils
+import cv2
 
 
 app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -247,6 +248,54 @@ class ImageConcanateOfUtils:
             row = torch.cat((image2, image1), dim=1)
         return (row,)
 
+class SplitMask:
+
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {
+                "mask": ("MASK", )
+            },
+            "optional": {
+            }
+        }
+
+    RETURN_TYPES = ("MASK","MASK",)
+    RETURN_NAMES = ("mask","mask",)
+    FUNCTION = 'split_mask'
+    CATEGORY = 'mask'
+
+    def split_mask(self, mask):
+        ret_masks = []
+        gray_image = mask[0].detach().cpu().numpy()
+
+        # 对灰度图像进行阈值化处理，将白色区域转换为二进制掩码
+        _, binary_mask = cv2.threshold(gray_image.astype(np.uint8), 0.5, 255, cv2.THRESH_BINARY)
+
+        # 寻找白色区域的轮廓
+        contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        logger.info(f"find mask areas:{len(contours)}")
+        if contours is not None and len(contours) > 0:
+            # 根据轮廓的面积对其进行排序
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:2]
+            contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
+            # 对最大的两个白色区域绘制到独立的图像中
+            for i, contour in enumerate(contours):
+                # 创建一个新的同样尺寸的空图像
+                new_mask = np.zeros_like(gray_image)
+                # 在空图像中绘制当前轮廓
+                cv2.drawContours(new_mask, [contour], -1, (255), thickness=cv2.FILLED)
+                ret_masks.append(torch.tensor(new_mask/255))
+        else:
+            # 如果未找到轮廓，则返回两个空 tensor
+            ret_masks = [torch.tensor(np.zeros_like(gray_image)), torch.tensor(np.zeros_like(gray_image))]
+        if len(ret_masks) == 1:
+            ret_masks.append(torch.tensor(np.zeros_like(gray_image)))    
+        return ret_masks
+
+
+
 class IntAndIntAddOffsetLiteral:
     RETURN_TYPES = ("INT","INT",)
     RETURN_NAMES = ("int", "int add offset")
@@ -292,6 +341,7 @@ NODE_CLASS_MAPPINGS = {
     "IntMultipleAddLiteral":IntMultipleAddLiteral,
     "ImageConcanateOfUtils":ImageConcanateOfUtils,
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
+    "SplitMask":SplitMask
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -304,4 +354,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageConcanateOfUtils":"Image Concanate of utils",
     "AdjustColorTemperature": "Adjust color temperature",
     "ColorCorrectOfUtils": "Color Correct Of Utils",
+    "SplitMask":"Split Mask To Two"
 }
