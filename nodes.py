@@ -291,7 +291,9 @@ class SplitMask:
             # 如果未找到轮廓，则返回两个空 tensor
             ret_masks = [torch.tensor(np.zeros_like(gray_image)), torch.tensor(np.zeros_like(gray_image))]
         if len(ret_masks) == 1:
-            ret_masks.append(torch.tensor(np.zeros_like(gray_image)))    
+            ret_masks.append(torch.tensor(np.zeros_like(gray_image)))
+
+        ret_masks = [torch.unsqueeze(m,0) for m in ret_masks]    
         return ret_masks
 
 
