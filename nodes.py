@@ -1,6 +1,6 @@
 import logging
 import folder_paths
-from nodes import LoadImage
+from nodes import LoadImage, LoadImageMask
 from comfy.cli_args import args
 import comfy.model_management
 import comfy.clip_vision
@@ -56,7 +56,37 @@ class LoadImageWithSwitch(LoadImage):
             return None, None
         return self.load_image(image)
 
+class LoadImageMaskWithSwitch(LoadImageMask):
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        return {"required":
+                    {"image": (sorted(files), {"image_upload": True}),
+                     "channel": (["red", "green", "blue","alpha"], ), },
+                "optional": {
+                    "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                    },
+                }
 
+    CATEGORY = "mask"
+
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = "load_image_with_switch"
+    def load_image_with_switch(self, image, channel, enabled):
+        if not enabled:
+            return (None, )
+        return self.load_image(image,channel)
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image, enabled):
+        if not enabled:
+            return True
+        if not folder_paths.exists_annotated_filepath(image):
+            return "Invalid image file: {}".format(image)
+        return True
+    
+    
 class ImageBatchOneOrMore:
 
     @classmethod
@@ -255,18 +285,22 @@ class SplitMask:
 
         return {
             "required": {
-                "mask": ("MASK", )
+                "mask_prior": ("MASK", ),                
             },
             "optional": {
+                "mask_alternative": ("MASK", )
             }
         }
 
-    RETURN_TYPES = ("MASK","MASK",)
-    RETURN_NAMES = ("mask","mask",)
+    RETURN_TYPES = ("MASK","MASK","MASK",)
+    RETURN_NAMES = ("mask","mask","mask",)
     FUNCTION = 'split_mask'
     CATEGORY = 'mask'
 
-    def split_mask(self, mask):
+    def split_mask(self, mask_prior,mask_alternative = None):
+        mask = mask_prior if mask_prior is not None else mask_alternative
+        if mask is None:
+            return [torch.zeros((64,64)).unsqueeze(0)] * 3
         ret_masks = []
         gray_image = mask[0].detach().cpu().numpy()
 
@@ -289,9 +323,9 @@ class SplitMask:
                 ret_masks.append(torch.tensor(new_mask/255))
         else:
             # 如果未找到轮廓，则返回两个空 tensor
-            ret_masks = [torch.tensor(np.zeros_like(gray_image)), torch.tensor(np.zeros_like(gray_image))]
-        if len(ret_masks) == 1:
-            ret_masks.append(torch.tensor(np.zeros_like(gray_image)))
+            ret_masks = [torch.tensor(np.zeros_like(gray_image))] * 3
+        if len(ret_masks) < 3:
+            ret_masks.extend([torch.tensor(np.zeros_like(gray_image))]*(3-len(ret_masks)))
 
         ret_masks = [torch.unsqueeze(m,0) for m in ret_masks]    
         return ret_masks
@@ -336,6 +370,7 @@ class IntMultipleAddLiteral:
                
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
+    "LoadImageMaskWithSwitch":LoadImageMaskWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
@@ -348,6 +383,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
+    "LoadImageMaskWithSwitch":"Load Image as Mask with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatTextOfUtils":"Concat text",
     "ModifyTextGender":"Modify Text Gender",
@@ -356,5 +392,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageConcanateOfUtils":"Image Concanate of utils",
     "AdjustColorTemperature": "Adjust color temperature",
     "ColorCorrectOfUtils": "Color Correct Of Utils",
-    "SplitMask":"Split Mask To Two"
+    "SplitMask":"Split Mask by Contours"
 }

@@ -42,6 +42,7 @@ class ColorCorrectOfUtils:
                     {"default": 0, "min": -100, "max": 100, "step": 5},
                 ),
                 "gamma": ("FLOAT", {"default": 1, "min": 0.2, "max": 2.2, "step": 0.1}),
+                "grain": ("FLOAT", {"default": 0, "min": 0.0, "max": 1, "step": 0.01}),
             },
         }
 
@@ -62,6 +63,7 @@ class ColorCorrectOfUtils:
         contrast: float,
         saturation: float,
         gamma: float,
+        grain: float,
     ):
         batch_size, height, width, _ = image.shape
         result = torch.zeros_like(image)
@@ -117,6 +119,12 @@ class ColorCorrectOfUtils:
             hsv_img = cv2.cvtColor(modified_image, cv2.COLOR_RGB2HSV)
             hsv_img[:, :, 0] = (hsv_img[:, :, 0] + hue) % 360
             modified_image = cv2.cvtColor(hsv_img, cv2.COLOR_HSV2RGB)
+
+            # grain
+            if grain > 0:
+                grain_image  = np.random.normal(0, 15, (modified_image.shape[0], modified_image.shape[1], 3)).astype(np.uint8)
+                size = modified_image.shape[:2]
+                modified_image = cv2.blendLinear(modified_image.astype(np.uint8), grain_image, np.ones(size,dtype=np.float32)*(1-grain),np.ones(size, dtype=np.float32)*grain)
 
             modified_image = modified_image.astype(np.uint8)
             modified_image = modified_image / 255
