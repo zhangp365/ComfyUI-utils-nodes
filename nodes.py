@@ -1,6 +1,7 @@
 import logging
 import folder_paths
 from nodes import LoadImage, LoadImageMask
+from comfy_extras.nodes_mask import ImageCompositeMasked
 from comfy.cli_args import args
 import comfy.model_management
 import comfy.clip_vision
@@ -47,14 +48,15 @@ class LoadImageWithSwitch(LoadImage):
 
     CATEGORY = "image"
 
-    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN")
+    RETURN_NAMES = ("image","mask","enabled")
     FUNCTION = "load_image_with_switch"
 
     def load_image_with_switch(self, image, enabled):
         logger.debug("start load image")
         if not enabled:
-            return None, None
-        return self.load_image(image)
+            return None, None, enabled
+        return self.load_image(image) +   (enabled, )
 
 class LoadImageMaskWithSwitch(LoadImageMask):
     @classmethod
@@ -71,12 +73,13 @@ class LoadImageMaskWithSwitch(LoadImageMask):
 
     CATEGORY = "mask"
 
-    RETURN_TYPES = ("MASK",)
+    RETURN_TYPES = ("MASK","BOOLEAN")
+    RETURN_NAMES = ("mask","enabled")
     FUNCTION = "load_image_with_switch"
     def load_image_with_switch(self, image, channel, enabled):
         if not enabled:
-            return (None, )
-        return self.load_image(image,channel)
+            return (None, enabled)
+        return self.load_image(image,channel) +  (enabled, )
 
     @classmethod
     def VALIDATE_INPUTS(s, image, enabled):
@@ -86,7 +89,7 @@ class LoadImageMaskWithSwitch(LoadImageMask):
             return "Invalid image file: {}".format(image)
         return True
     
-    
+
 class ImageBatchOneOrMore:
 
     @classmethod
@@ -367,10 +370,43 @@ class IntMultipleAddLiteral:
         if a_aign == "negative":
             a = - a
         return (number, int( a*number + b))
-               
+
+
+MAX_RESOLUTION=16384
+class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "destination": ("IMAGE",),
+                "source": ("IMAGE",),
+                "x": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
+                "y": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
+                "resize_source": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                "mask": ("MASK",),
+                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                "invert_mask": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+            }
+        }
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "composite_with_switch"
+
+    CATEGORY = "image"
+
+    def composite_with_switch(self, destination, source, x, y, resize_source, mask = None, enabled = True, invert_mask= False):
+        if not enabled:
+            return (destination, )
+        if invert_mask:
+            mask = 1.0 - mask
+        return self.composite(destination, source, x, y, resize_source, mask)
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch":LoadImageMaskWithSwitch,
+    "ImageCompositeMaskedWithSwitch":ImageCompositeMaskedWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
@@ -384,6 +420,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "LoadImageMaskWithSwitch":"Load Image as Mask with switch",
+    "ImageCompositeMaskedWithSwitch": "Image Composite Masked with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatTextOfUtils":"Concat text",
     "ModifyTextGender":"Modify Text Gender",

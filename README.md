@@ -3,6 +3,12 @@
 ## LoadImageWithSwitch
 Modified the official LoadImage node by adding a switch. When turned off, it will not load the image.
 
+## LoadImageMaskWithSwitch
+Modified the official LoadImageMask node by adding a switch. When turned off, it will not load the image to mask.
+
+## ImageCompositeMaskedWithSwitch
+Modified the official ImageCompositeMasked node by adding a switch. When turned off, it will not return the destination image directly.
+
 ## ImageBatchOneOrMore
 This node can input one or more images, the limit is six. It expands the functionality of the official ImageBatch node from two to multiple images.
 
@@ -26,3 +32,4 @@ This node adjusts the text to describe the gender based on the input. If the gen
 
 ## SplitMask
 This node splits one mask into two masks of the same size according to the area of the submasks. If there are more than two areas, it will select the two largest submasks.
+
