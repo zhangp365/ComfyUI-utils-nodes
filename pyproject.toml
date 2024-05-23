@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-utils-nodes"
+description = "Nodes:LoadImageWithSwitch, ImageBatchOneOrMore, ConcatText, ModifyTextGender"
+version = "1.0.0"
+license = "LICENSE"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/zhangp365/ComfyUI-utils-nodes"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-utils-nodes"
+Icon = ""
