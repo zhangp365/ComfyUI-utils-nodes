@@ -389,7 +389,11 @@ class MaskFastGrow:
             output = output_blurred.astype(np.float32) / 255.0
             out.append(torch.from_numpy(output))
 
-        return torch.stack(out)
+        result = torch.stack(out,dim= 0)
+        if result.dim() == 2:
+            result = torch.unsqueeze(result, 0)
+        return (result,)
+        
 
 
 
