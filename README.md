@@ -33,3 +33,6 @@ This node adjusts the text to describe the gender based on the input. If the gen
 ## SplitMask
 This node splits one mask into two masks of the same size according to the area of the submasks. If there are more than two areas, it will select the two largest submasks.
 
+## MaskFastGrow
+This node is designed for growing masks quickly. When using the official or other mask growth nodes, the speed slows down significantly with large grow values, such as above 20. In contrast, this node maintains consistent speed regardless of the grow value.
+

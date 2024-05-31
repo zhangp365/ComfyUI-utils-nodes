@@ -334,6 +334,64 @@ class SplitMask:
         return ret_masks
 
 
+class MaskFastGrow:
+
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {
+                "mask": ("MASK", ),                
+                "invert_mask": ("BOOLEAN", {"default": True}),  # 反转mask
+                "grow": ("INT", {"default": 4, "min": -999, "max": 999, "step": 1}),
+                "blur": ("INT", {"default": 4, "min": 0, "max": 999, "step": 1}),
+            },
+            "optional": {
+            }
+        }
+
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = 'mask_grow'
+    CATEGORY = 'mask'
+
+    def mask_grow(self, mask, invert_mask, grow, blur):
+        if mask.dim() == 2:
+            mask = torch.unsqueeze(mask, 0)
+
+        c = 0
+        kernel = np.array([[c, 1, c],
+                        [1, 1, 1],
+                        [c, 1, c]], dtype=np.uint8)
+
+        mask = mask.reshape((-1, mask.shape[-2], mask.shape[-1]))
+        out = []
+
+        for m in mask:
+            if invert_mask:
+                m = 1 - m
+            output = m.numpy().astype(np.float32)
+
+            # Scale the float mask to [0, 255] for OpenCV processing
+            output_scaled = (output * 255).astype(np.uint8)
+
+            if grow > 0:
+                output_scaled = cv2.dilate(output_scaled, kernel, iterations=grow)
+            else:
+                output_scaled = cv2.erode(output_scaled, kernel, iterations=-grow)
+
+            # Apply Gaussian blur using OpenCV
+            if blur> 0:
+                output_blurred = cv2.GaussianBlur(output_scaled, (blur*2+1, blur*2+1), 0)
+            else:
+                output_blurred = output_scaled
+
+            # Scale back to [0, 1]
+            output = output_blurred.astype(np.float32) / 255.0
+            out.append(torch.from_numpy(output))
+
+        return torch.stack(out)
+
+
 
 class IntAndIntAddOffsetLiteral:
     RETURN_TYPES = ("INT","INT",)
@@ -414,7 +472,8 @@ NODE_CLASS_MAPPINGS = {
     "IntMultipleAddLiteral":IntMultipleAddLiteral,
     "ImageConcanateOfUtils":ImageConcanateOfUtils,
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
-    "SplitMask":SplitMask
+    "SplitMask":SplitMask,
+    "MaskFastGrow":MaskFastGrow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -429,5 +488,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageConcanateOfUtils":"Image Concanate of utils",
     "AdjustColorTemperature": "Adjust color temperature",
     "ColorCorrectOfUtils": "Color Correct Of Utils",
-    "SplitMask":"Split Mask by Contours"
+    "SplitMask":"Split Mask by Contours",
+    "MaskFastGrow":"MaskGrow fast",
 }
