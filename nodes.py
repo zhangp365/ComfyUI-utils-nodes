@@ -52,7 +52,7 @@ class LoadImageWithSwitch(LoadImage):
     RETURN_NAMES = ("image","mask","enabled")
     FUNCTION = "load_image_with_switch"
 
-    def load_image_with_switch(self, image, enabled):
+    def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled
@@ -75,7 +75,7 @@ class LoadImageWithoutListDir(LoadImage):
     RETURN_NAMES = ("image","mask","enabled")
     FUNCTION = "load_image_with_switch"
 
-    def load_image_with_switch(self, image, enabled):
+    def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled
@@ -99,7 +99,7 @@ class LoadImageMaskWithSwitch(LoadImageMask):
     RETURN_TYPES = ("MASK","BOOLEAN")
     RETURN_NAMES = ("mask","enabled")
     FUNCTION = "load_image_with_switch"
-    def load_image_with_switch(self, image, channel, enabled):
+    def load_image_with_switch(self, image, channel, enabled=True):
         if not enabled:
             return (None, enabled)
         return self.load_image(image,channel) +  (enabled, )
@@ -129,7 +129,7 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
     RETURN_TYPES = ("MASK","BOOLEAN")
     RETURN_NAMES = ("mask","enabled")
     FUNCTION = "load_image_with_switch"
-    def load_image_with_switch(self, image, channel, enabled):
+    def load_image_with_switch(self, image, channel, enabled=True):
         if not enabled:
             return (None, enabled)
         return self.load_image(image,channel) +  (enabled, )
