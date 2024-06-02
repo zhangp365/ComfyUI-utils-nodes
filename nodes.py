@@ -58,6 +58,29 @@ class LoadImageWithSwitch(LoadImage):
             return None, None, enabled
         return self.load_image(image) +   (enabled, )
 
+
+class LoadImageWithoutListDir(LoadImage):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                {"image": ([], {"image_upload": True})},
+                "optional": {
+                    "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                }
+                }
+
+    CATEGORY = "image"
+
+    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN")
+    RETURN_NAMES = ("image","mask","enabled")
+    FUNCTION = "load_image_with_switch"
+
+    def load_image_with_switch(self, image, enabled):
+        logger.debug("start load image")
+        if not enabled:
+            return None, None, enabled
+        return self.load_image(image) +   (enabled, )
+        
 class LoadImageMaskWithSwitch(LoadImageMask):
     @classmethod
     def INPUT_TYPES(s):
@@ -89,6 +112,36 @@ class LoadImageMaskWithSwitch(LoadImageMask):
             return "Invalid image file: {}".format(image)
         return True
     
+
+class LoadImageMaskWithoutListDir(LoadImageMask):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                    {"image": ([], {"image_upload": True}),
+                        "channel": (["red", "green", "blue","alpha"], ), },
+                "optional": {
+                    "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                    },
+                }
+
+    CATEGORY = "mask"
+
+    RETURN_TYPES = ("MASK","BOOLEAN")
+    RETURN_NAMES = ("mask","enabled")
+    FUNCTION = "load_image_with_switch"
+    def load_image_with_switch(self, image, channel, enabled):
+        if not enabled:
+            return (None, enabled)
+        return self.load_image(image,channel) +  (enabled, )
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image, enabled):
+        if not enabled:
+            return True
+        if not folder_paths.exists_annotated_filepath(image):
+            return "Invalid image file: {}".format(image)
+        return True   
+
 
 class ImageBatchOneOrMore:
 
@@ -468,6 +521,8 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch":LoadImageMaskWithSwitch,
+    "LoadImageWithoutListDir":LoadImageWithoutListDir,
+    "LoadImageMaskWithoutListDir":LoadImageMaskWithoutListDir,
     "ImageCompositeMaskedWithSwitch":ImageCompositeMaskedWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatTextOfUtils": ConcatTextOfUtils,
@@ -482,7 +537,9 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
+    "LoadImageWithoutListDir": "Load Image without listing input dir",
     "LoadImageMaskWithSwitch":"Load Image as Mask with switch",
+    "LoadImageMaskWithoutListDir":"Load Image as Mask without listing input dir",
     "ImageCompositeMaskedWithSwitch": "Image Composite Masked with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatTextOfUtils":"Concat text",

@@ -6,6 +6,12 @@ Modified the official LoadImage node by adding a switch. When turned off, it wil
 ## LoadImageMaskWithSwitch
 Modified the official LoadImageMask node by adding a switch. When turned off, it will not load the image to mask.
 
+## LoadImageWithoutListDir
+When there are a lot of images in the input directory, loading image with `os.listdir` can be slow. This node avoids using `os.listdir` to improve performance.
+
+## LoadImageMaskWithoutListDir
+When there are a lot of images in the input directory, loading image as Mask with `os.listdir` can be slow. This node avoids using `os.listdir` to improve performance.
+
 ## ImageCompositeMaskedWithSwitch
 Modified the official ImageCompositeMasked node by adding a switch. When turned off, it will not return the destination image directly.
 
