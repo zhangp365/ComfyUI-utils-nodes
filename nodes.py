@@ -368,9 +368,9 @@ class SplitMask:
         logger.info(f"find mask areas:{len(contours)}")
         if contours is not None and len(contours) > 0:
             # 根据轮廓的面积对其进行排序
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:2]
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:3]
             contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
-            # 对最大的两个白色区域绘制到独立的图像中
+
             for i, contour in enumerate(contours):
                 # 创建一个新的同样尺寸的空图像
                 new_mask = np.zeros_like(gray_image)
@@ -378,7 +378,7 @@ class SplitMask:
                 cv2.drawContours(new_mask, [contour], -1, (255), thickness=cv2.FILLED)
                 ret_masks.append(torch.tensor(new_mask/255))
         else:
-            # 如果未找到轮廓，则返回两个空 tensor
+            # 如果未找到轮廓，则返回空 tensor
             ret_masks = [torch.tensor(np.zeros_like(gray_image))] * 3
         if len(ret_masks) < 3:
             ret_masks.extend([torch.tensor(np.zeros_like(gray_image))]*(3-len(ret_masks)))
