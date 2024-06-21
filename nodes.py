@@ -348,15 +348,15 @@ class SplitMask:
             }
         }
 
-    RETURN_TYPES = ("MASK","MASK","MASK",)
-    RETURN_NAMES = ("mask","mask","mask",)
+    RETURN_TYPES = ("MASK","MASK",)
+    RETURN_NAMES = ("mask","mask",)
     FUNCTION = 'split_mask'
     CATEGORY = 'mask'
 
     def split_mask(self, mask_prior,mask_alternative = None):
         mask = mask_prior if mask_prior is not None else mask_alternative
         if mask is None:
-            return [torch.zeros((64,64)).unsqueeze(0)] * 3
+            return [torch.zeros((64,64)).unsqueeze(0)] * 2
         ret_masks = []
         gray_image = mask[0].detach().cpu().numpy()
 
@@ -368,7 +368,7 @@ class SplitMask:
         logger.info(f"find mask areas:{len(contours)}")
         if contours is not None and len(contours) > 0:
             # 根据轮廓的面积对其进行排序
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:3]
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:2]
             contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
 
             for i, contour in enumerate(contours):
@@ -379,9 +379,9 @@ class SplitMask:
                 ret_masks.append(torch.tensor(new_mask/255))
         else:
             # 如果未找到轮廓，则返回空 tensor
-            ret_masks = [torch.tensor(np.zeros_like(gray_image))] * 3
-        if len(ret_masks) < 3:
-            ret_masks.extend([torch.tensor(np.zeros_like(gray_image))]*(3-len(ret_masks)))
+            ret_masks = [torch.tensor(np.zeros_like(gray_image))] * 2
+        if len(ret_masks) < 2:
+            ret_masks.extend([torch.tensor(np.zeros_like(gray_image))]*(2-len(ret_masks)))
 
         ret_masks = [torch.unsqueeze(m,0) for m in ret_masks]    
         return ret_masks
