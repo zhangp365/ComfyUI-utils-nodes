@@ -518,6 +518,26 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
         return self.composite(destination, source, x, y, resize_source, mask)
 
 
+class CheckpointLoaderSimpleWithSwitch:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { "ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
+                             },
+                "optional": {
+                "load_model": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                "load_clip": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                "load_vae": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+            }}
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    FUNCTION = "load_checkpoint"
+
+    CATEGORY = "loaders"
+
+    def load_checkpoint(self, ckpt_name,load_model,load_clip,load_vae):
+        ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
+        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_model=load_model, output_vae=load_vae, output_clip=load_clip, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        return out[:3]
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch":LoadImageMaskWithSwitch,
@@ -533,6 +553,7 @@ NODE_CLASS_MAPPINGS = {
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
     "SplitMask":SplitMask,
     "MaskFastGrow":MaskFastGrow,
+    "CheckpointLoaderSimpleWithSwitch":CheckpointLoaderSimpleWithSwitch,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -551,4 +572,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ColorCorrectOfUtils": "Color Correct Of Utils",
     "SplitMask":"Split Mask by Contours",
     "MaskFastGrow":"MaskGrow fast",
+    "CheckpointLoaderSimpleWithSwitch":"Load checkpoint with switch"
 }
