@@ -71,15 +71,15 @@ class LoadImageWithoutListDir(LoadImage):
 
     CATEGORY = "image"
 
-    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN")
-    RETURN_NAMES = ("image","mask","enabled")
+    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN", "STRING")
+    RETURN_NAMES = ("image","mask","enabled","filename")
     FUNCTION = "load_image_with_switch"
 
     def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled
-        return self.load_image(image) +   (enabled, )
+        return self.load_image(image) +   (enabled, ) + (image,)
         
 class LoadImageMaskWithSwitch(LoadImageMask):
     @classmethod
@@ -447,7 +447,39 @@ class MaskFastGrow:
             result = torch.unsqueeze(result, 0)
         return (result,)
         
+class MaskAutoSelector:
+    @classmethod
+    def INPUT_TYPES(self):
 
+        return {
+            "required": {
+                "mask_prior": ("MASK", ),                
+            },
+            "optional": {
+                "mask_alternative": ("MASK", ),
+                "mask_third": ("MASK", )
+            }
+        }
+
+    RETURN_TYPES = ("MASK",)
+    RETURN_NAMES = ("mask",)
+    FUNCTION = 'select_mask'
+    CATEGORY = 'mask'
+
+    def select_mask(self, mask_prior = None,mask_alternative = None, mask_third = None):
+        if mask_prior is not None:
+            mask = mask_prior        
+        elif mask_alternative is not None:
+            mask = mask_alternative
+        else:
+            mask = mask_third
+        
+        if mask is None:
+            raise RuntimeError("all mask inputs is None")      
+
+        if mask.dim() == 2:
+            mask = torch.unsqueeze(mask, 0)
+        return (mask,)
 
 
 class IntAndIntAddOffsetLiteral:
@@ -553,6 +585,7 @@ NODE_CLASS_MAPPINGS = {
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
     "SplitMask":SplitMask,
     "MaskFastGrow":MaskFastGrow,
+    "MaskAutoSelector":MaskAutoSelector,
     "CheckpointLoaderSimpleWithSwitch":CheckpointLoaderSimpleWithSwitch,
 }
 
@@ -572,5 +605,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ColorCorrectOfUtils": "Color Correct Of Utils",
     "SplitMask":"Split Mask by Contours",
     "MaskFastGrow":"MaskGrow fast",
+    "MaskAutoSelector": "Mask auto selector",
     "CheckpointLoaderSimpleWithSwitch":"Load checkpoint with switch"
 }

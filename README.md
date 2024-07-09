@@ -42,5 +42,10 @@ This node splits one mask into two masks of the same size according to the area 
 ## MaskFastGrow
 This node is designed for growing masks quickly. When using the official or other mask growth nodes, the speed slows down significantly with large grow values, such as above 20. In contrast, this node maintains consistent speed regardless of the grow value.
 
+## MaskAutoSelector
+Check the three input masks. If any are available, return the first. If none are available, raise an exception.
+
 ## CheckpointLoaderSimpleWithSwitch
-Enhanced the official LoadCheckpoint node by integrating three switches. Each switch controls whether a specific component is loaded. When a switch is turned off, the corresponding component will not be loaded.
+Enhanced the official LoadCheckpoint node by integrating three switches. Each switch controls whether a specific component is loaded. When a switch is turned off, the corresponding component will not be loaded. if you use the extra vae and close the model's vae loading, that will save memory.
+
+
