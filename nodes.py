@@ -598,6 +598,7 @@ class ImageResizeTo8x:
                 "side_ratio": ("STRING", {"default": "4:3"}),
                 "crop_pad_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "pad_feathering": ("INT", {"default": 20, "min": 0, "max": 8192, "step": 1}),
+                "crop_to_8x": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
             },
             "optional": {
                 "mask_optional": ("MASK",),
@@ -644,7 +645,7 @@ class ImageResizeTo8x:
         return pixels
 
 
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None):
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None,crop_to_8x=False):
         validity = self.VALIDATE_INPUTS(action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio)
         if validity is not True:
             raise Exception(validity)
@@ -728,8 +729,9 @@ class ImageResizeTo8x:
                         if add_y[1] > 0 and j < height:
                             for k in range(width):
                                 mask[i, height + add_y[0] - j - 1, k] = max(mask[i, height + add_y[0] - j - 1, k], feather_strength)
-        pixels = self.vae_encode_crop_pixels(pixels)
-        mask = self.vae_encode_crop_pixels(mask)
+        if crop_to_8x:
+            pixels = self.vae_encode_crop_pixels(pixels)
+            mask = self.vae_encode_crop_pixels(mask)
         return (pixels, mask)
     
 
