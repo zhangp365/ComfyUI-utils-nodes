@@ -21,8 +21,9 @@ from .color_correct import ColorCorrectOfUtils
 import cv2
 
 
-app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-config_dir = os.path.join(app_dir,"config")
+app_dir = os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.realpath(__file__))))
+config_dir = os.path.join(app_dir, "config")
 if not os.path.exists(config_dir):
     os.makedirs(config_dir)
 
@@ -49,14 +50,14 @@ class LoadImageWithSwitch(LoadImage):
     CATEGORY = "image"
 
     RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN")
-    RETURN_NAMES = ("image","mask","enabled")
+    RETURN_NAMES = ("image", "mask", "enabled")
     FUNCTION = "load_image_with_switch"
 
     def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled
-        return self.load_image(image) +   (enabled, )
+        return self.load_image(image) + (enabled, )
 
 
 class LoadImageWithoutListDir(LoadImage):
@@ -72,37 +73,40 @@ class LoadImageWithoutListDir(LoadImage):
     CATEGORY = "image"
 
     RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN", "STRING")
-    RETURN_NAMES = ("image","mask","enabled","filename")
+    RETURN_NAMES = ("image", "mask", "enabled", "filename")
     FUNCTION = "load_image_with_switch"
 
     def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled
-        return self.load_image(image) +   (enabled, ) + (image,)
-        
+        return self.load_image(image) + (enabled, ) + (image,)
+
+
 class LoadImageMaskWithSwitch(LoadImageMask):
     @classmethod
     def INPUT_TYPES(s):
         input_dir = folder_paths.get_input_directory()
-        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(
+            os.path.join(input_dir, f))]
         return {"required":
-                    {"image": (sorted(files), {"image_upload": True}),
-                     "channel": (["red", "green", "blue","alpha"], ), },
+                {"image": (sorted(files), {"image_upload": True}),
+                 "channel": (["red", "green", "blue", "alpha"], ), },
                 "optional": {
                     "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-                    },
+                },
                 }
 
     CATEGORY = "mask"
 
-    RETURN_TYPES = ("MASK","BOOLEAN")
-    RETURN_NAMES = ("mask","enabled")
+    RETURN_TYPES = ("MASK", "BOOLEAN")
+    RETURN_NAMES = ("mask", "enabled")
     FUNCTION = "load_image_with_switch"
+
     def load_image_with_switch(self, image, channel, enabled=True):
         if not enabled:
             return (None, enabled)
-        return self.load_image(image,channel) +  (enabled, )
+        return self.load_image(image, channel) + (enabled, )
 
     @classmethod
     def VALIDATE_INPUTS(s, image, enabled):
@@ -111,28 +115,29 @@ class LoadImageMaskWithSwitch(LoadImageMask):
         if not folder_paths.exists_annotated_filepath(image):
             return "Invalid image file: {}".format(image)
         return True
-    
+
 
 class LoadImageMaskWithoutListDir(LoadImageMask):
     @classmethod
     def INPUT_TYPES(s):
         return {"required":
-                    {"image": ([], {"image_upload": True}),
-                        "channel": (["red", "green", "blue","alpha"], ), },
+                {"image": ([], {"image_upload": True}),
+                 "channel": (["red", "green", "blue", "alpha"], ), },
                 "optional": {
                     "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-                    },
+                },
                 }
 
     CATEGORY = "mask"
 
-    RETURN_TYPES = ("MASK","BOOLEAN")
-    RETURN_NAMES = ("mask","enabled")
+    RETURN_TYPES = ("MASK", "BOOLEAN")
+    RETURN_NAMES = ("mask", "enabled")
     FUNCTION = "load_image_with_switch"
+
     def load_image_with_switch(self, image, channel, enabled=True):
         if not enabled:
             return (None, enabled)
-        return self.load_image(image,channel) +  (enabled, )
+        return self.load_image(image, channel) + (enabled, )
 
     @classmethod
     def VALIDATE_INPUTS(s, image, enabled):
@@ -140,7 +145,7 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
             return True
         if not folder_paths.exists_annotated_filepath(image):
             return "Invalid image file: {}".format(image)
-        return True   
+        return True
 
 
 class ImageBatchOneOrMore:
@@ -169,6 +174,7 @@ class ImageBatchOneOrMore:
         s = torch.cat(images, dim=0)
         return (s,)
 
+
 class ConcatTextOfUtils:
     """
     This node will concatenate two strings together
@@ -191,21 +197,23 @@ class ConcatTextOfUtils:
 
 
 class GenderWordsConfig:
-    file_path = os.path.join(config_dir,"gender_words_config.yaml")
+    file_path = os.path.join(config_dir, "gender_words_config.yaml")
     if not os.path.exists(file_path):
         gender_map = {
-                'F': {
-                    'man': 'woman', 'men': 'women', 'sir': 'madam', 'father': 'mother', 
-                    'husband': 'wife', 'son': 'daughter', 'boy': 'girl', 'brother': 'sister', 
-                    'uncle': 'aunt', 'grandfather': 'grandmother', 'nephew': 'niece', 
-                    'groom': 'bride', 'waiter': 'waitress', 'king': 'queen', 'gentleman': 'lady', 
-                    'prince': 'princess', 'male': 'female', 'fiance': 'fiancee', 
-                    'actor': 'actress', 'hero': 'heroine', 'he': 'she', 'his': 'her', 
-                    'him': 'her', 'himself': 'herself',"he's": "she's",
-                }
+            'F': {
+                'man': 'woman', 'men': 'women', 'sir': 'madam', 'father': 'mother',
+                'husband': 'wife', 'son': 'daughter', 'boy': 'girl', 'brother': 'sister',
+                'uncle': 'aunt', 'grandfather': 'grandmother', 'nephew': 'niece',
+                'groom': 'bride', 'waiter': 'waitress', 'king': 'queen', 'gentleman': 'lady',
+                'prince': 'princess', 'male': 'female', 'fiance': 'fiancee',
+                'actor': 'actress', 'hero': 'heroine', 'he': 'she', 'his': 'her',
+                'him': 'her', 'himself': 'herself', "he's": "she's",
             }
-        gender_map['M'] = {value:key for key,value in gender_map['F'].items()}
-        config = {"gender_map": gender_map, "gender_add_words":{"M":["male",],"F":["female"]}}
+        }
+        gender_map['M'] = {value: key for key,
+                           value in gender_map['F'].items()}
+        config = {"gender_map": gender_map, "gender_add_words": {
+            "M": ["male",], "F": ["female"]}}
         with open(file_path, 'w') as file:
             yaml.dump(config, file)
 
@@ -238,33 +246,38 @@ class ModifyTextGender:
     @ classmethod
     def INPUT_TYPES(cls):
         return {"required": {
-            "text": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
-            "gender": ("STRING", {"placeholder":"please Input M for male, F for female"}),            
+            "gender_prior": (["", "M", "F"],),
+            "text": ("STRING", {"forceInput": True}),
         },
-        "optional":{
+            "optional": {
+            "gender_alternative": ("STRING", {"forceInput": True}),
+            "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+        },
+            "hidden": {
             "age": ("INT", {"default": -1, "min": -1, "max": 120, "step": 1}),
-             "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-        }}
+        }
+        }
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
     CATEGORY = "utils/text/operations"
-    GenderWordsConfig.load_config()   
-    
+    GenderWordsConfig.load_config()
+
     @ staticmethod
-    def fun(text, gender, age=-1, enabled=True):
-        gender_map = GenderWordsConfig.get_config().get("gender_map",{})
+    def fun(text, gender_prior="", gender_alternative=None, age=-1, enabled=True):
+        gender = gender_prior if gender_prior else gender_alternative
+        gender_map = GenderWordsConfig.get_config().get("gender_map", {})
         if not enabled or text is None or gender is None or gender.upper() not in gender_map:
             return (text,)
         result = ModifyTextGender.gender_swap(text, gender, gender_map)
-        
-        result = ModifyTextGender.gender_add_words(result,gender)
+
+        result = ModifyTextGender.gender_add_words(result, gender)
         logger.info(f"ModifyTextGender result:{result}")
         return (result,)
-    
+
     @ staticmethod
     def gender_add_words(text, gender):
-        gender_add_map = GenderWordsConfig.get_config().get("gender_add_words",{})
+        gender_add_map = GenderWordsConfig.get_config().get("gender_add_words", {})
         prefixes = gender_add_map[gender.upper()]
         result = ", ".join(prefixes + [text])
         return result
@@ -276,25 +289,25 @@ class ModifyTextGender:
         for i, word in enumerate(words):
             masks = ""
             case = 'lower'
-            original_word = word.lower()    
+            original_word = word.lower()
             if word.endswith(".") or word.endswith(",") or word.endswith("'") or word.endswith('"') or word.endswith(":"):
                 case = "masks"
-                original_word,  masks= original_word[:-1], original_word[-1]  
+                original_word,  masks = original_word[:-1], original_word[-1]
 
-            replacement = None    
-            for key,value in mappings.items():
+            replacement = None
+            for key, value in mappings.items():
                 if len(key) == 2:
                     if original_word == key:
                         replacement = value
                         break
-                elif original_word.startswith(key) or original_word.endswith(key):                    
+                elif original_word.startswith(key) or original_word.endswith(key):
                     replacement = original_word.replace(key, value)
                     break
             if replacement is not None:
                 if case == "masks":
                     replacement = replacement + masks
                 words[i] = replacement
-        return ' '.join(words)     
+        return ' '.join(words)
 
 
 class ImageConcanateOfUtils:
@@ -304,14 +317,14 @@ class ImageConcanateOfUtils:
             "image1": ("IMAGE",),
             "image2": ("IMAGE",),
             "direction": (
-            [   'right',
-                'down',
-                'left',
-                'up',
-            ],
-            {
-            "default": 'right'
-             }),
+                ['right',
+                 'down',
+                 'left',
+                 'up',
+                 ],
+                {
+                    "default": 'right'
+                }),
         }}
 
     RETURN_TYPES = ("IMAGE",)
@@ -323,7 +336,7 @@ class ImageConcanateOfUtils:
             return (image1,)
         if image1.shape[1:] != image2.shape[1:]:
             image2 = comfy.utils.common_upscale(
-                            image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
+                image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
         if direction == 'right':
             row = torch.cat((image1, image2), dim=2)
         elif direction == 'down':
@@ -334,6 +347,7 @@ class ImageConcanateOfUtils:
             row = torch.cat((image2, image1), dim=1)
         return (row,)
 
+
 class SplitMask:
 
     @classmethod
@@ -341,30 +355,32 @@ class SplitMask:
 
         return {
             "required": {
-                "mask_prior": ("MASK", ),                
+                "mask_prior": ("MASK", ),
             },
             "optional": {
                 "mask_alternative": ("MASK", )
             }
         }
 
-    RETURN_TYPES = ("MASK","MASK",)
-    RETURN_NAMES = ("mask","mask",)
+    RETURN_TYPES = ("MASK", "MASK",)
+    RETURN_NAMES = ("mask", "mask",)
     FUNCTION = 'split_mask'
     CATEGORY = 'mask'
 
-    def split_mask(self, mask_prior,mask_alternative = None):
+    def split_mask(self, mask_prior, mask_alternative=None):
         mask = mask_prior if mask_prior is not None else mask_alternative
         if mask is None:
-            return [torch.zeros((64,64)).unsqueeze(0)] * 2
+            return [torch.zeros((64, 64)).unsqueeze(0)] * 2
         ret_masks = []
         gray_image = mask[0].detach().cpu().numpy()
 
         # 对灰度图像进行阈值化处理，将白色区域转换为二进制掩码
-        _, binary_mask = cv2.threshold(gray_image.astype(np.uint8), 0.5, 255, cv2.THRESH_BINARY)
+        _, binary_mask = cv2.threshold(gray_image.astype(
+            np.uint8), 0.5, 255, cv2.THRESH_BINARY)
 
         # 寻找白色区域的轮廓
-        contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         logger.info(f"find mask areas:{len(contours)}")
         if contours is not None and len(contours) > 0:
             # 根据轮廓的面积对其进行排序
@@ -375,15 +391,17 @@ class SplitMask:
                 # 创建一个新的同样尺寸的空图像
                 new_mask = np.zeros_like(gray_image)
                 # 在空图像中绘制当前轮廓
-                cv2.drawContours(new_mask, [contour], -1, (255), thickness=cv2.FILLED)
+                cv2.drawContours(
+                    new_mask, [contour], -1, (255), thickness=cv2.FILLED)
                 ret_masks.append(torch.tensor(new_mask/255))
         else:
             # 如果未找到轮廓，则返回空 tensor
             ret_masks = [torch.tensor(np.zeros_like(gray_image))] * 2
         if len(ret_masks) < 2:
-            ret_masks.extend([torch.tensor(np.zeros_like(gray_image))]*(2-len(ret_masks)))
+            ret_masks.extend(
+                [torch.tensor(np.zeros_like(gray_image))]*(2-len(ret_masks)))
 
-        ret_masks = [torch.unsqueeze(m,0) for m in ret_masks]    
+        ret_masks = [torch.unsqueeze(m, 0) for m in ret_masks]
         return ret_masks
 
 
@@ -394,7 +412,7 @@ class MaskFastGrow:
 
         return {
             "required": {
-                "mask": ("MASK", ),                
+                "mask": ("MASK", ),
                 "invert_mask": ("BOOLEAN", {"default": True}),  # 反转mask
                 "grow": ("INT", {"default": 4, "min": -999, "max": 999, "step": 1}),
                 "blur": ("INT", {"default": 4, "min": 0, "max": 999, "step": 1}),
@@ -413,8 +431,8 @@ class MaskFastGrow:
 
         c = 0
         kernel = np.array([[c, 1, c],
-                        [1, 1, 1],
-                        [c, 1, c]], dtype=np.uint8)
+                           [1, 1, 1],
+                           [c, 1, c]], dtype=np.uint8)
 
         mask = mask.reshape((-1, mask.shape[-2], mask.shape[-1]))
         out = []
@@ -428,13 +446,16 @@ class MaskFastGrow:
             output_scaled = (output * 255).astype(np.uint8)
 
             if grow > 0:
-                output_scaled = cv2.dilate(output_scaled, kernel, iterations=grow)
+                output_scaled = cv2.dilate(
+                    output_scaled, kernel, iterations=grow)
             else:
-                output_scaled = cv2.erode(output_scaled, kernel, iterations=-grow)
+                output_scaled = cv2.erode(
+                    output_scaled, kernel, iterations=-grow)
 
             # Apply Gaussian blur using OpenCV
-            if blur> 0:
-                output_blurred = cv2.GaussianBlur(output_scaled, (blur*2+1, blur*2+1), 0)
+            if blur > 0:
+                output_blurred = cv2.GaussianBlur(
+                    output_scaled, (blur*2+1, blur*2+1), 0)
             else:
                 output_blurred = output_scaled
 
@@ -442,18 +463,19 @@ class MaskFastGrow:
             output = output_blurred.astype(np.float32) / 255.0
             out.append(torch.from_numpy(output))
 
-        result = torch.stack(out,dim= 0)
+        result = torch.stack(out, dim=0)
         if result.dim() == 2:
             result = torch.unsqueeze(result, 0)
         return (result,)
-        
+
+
 class MaskAutoSelector:
     @classmethod
     def INPUT_TYPES(self):
 
         return {
             "required": {
-                "mask_prior": ("MASK", ),                
+                "mask_prior": ("MASK", ),
             },
             "optional": {
                 "mask_alternative": ("MASK", ),
@@ -466,16 +488,16 @@ class MaskAutoSelector:
     FUNCTION = 'select_mask'
     CATEGORY = 'mask'
 
-    def select_mask(self, mask_prior = None,mask_alternative = None, mask_third = None):
+    def select_mask(self, mask_prior=None, mask_alternative=None, mask_third=None):
         if mask_prior is not None:
-            mask = mask_prior        
+            mask = mask_prior
         elif mask_alternative is not None:
             mask = mask_alternative
         else:
             mask = mask_third
-        
+
         if mask is None:
-            raise RuntimeError("all mask inputs is None")      
+            raise RuntimeError("all mask inputs is None")
 
         if mask.dim() == 2:
             mask = torch.unsqueeze(mask, 0)
@@ -483,7 +505,7 @@ class MaskAutoSelector:
 
 
 class IntAndIntAddOffsetLiteral:
-    RETURN_TYPES = ("INT","INT",)
+    RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("int", "int add offset")
     FUNCTION = "get_int"
     CATEGORY = "number/utils"
@@ -491,13 +513,14 @@ class IntAndIntAddOffsetLiteral:
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
-                "optional":{"offset": ("INT", {"default": 1, "step": 1}),}
+                "optional": {"offset": ("INT", {"default": 1, "step": 1}), }
                 }
 
     def get_int(self, number, offset):
         if number == 0:
-            return(0 ,0)
-        return (number,number + offset)
+            return (0, 0)
+        return (number, number + offset)
+
 
 class IntMultipleAddLiteral:
     RETURN_TYPES = ("INT", "INT",)
@@ -508,18 +531,20 @@ class IntMultipleAddLiteral:
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
-                "optional":{ "a_aign":(["positive","negative"],{"default": "positive"}),
-                            "a": ("FLOAT", {"default": 1.0, "step": 0.05}),"b": ("INT", {"default": 1, "step": 1}),
-                           }
+                "optional": {"a_aign": (["positive", "negative"], {"default": "positive"}),
+                             "a": ("FLOAT", {"default": 1.0, "step": 0.05}), "b": ("INT", {"default": 1, "step": 1}),
+                             }
                 }
 
     def get_int(self, number, a, b, a_aign):
         if a_aign == "negative":
             a = - a
-        return (number, int( a*number + b))
+        return (number, int(a*number + b))
 
 
-MAX_RESOLUTION=16384
+MAX_RESOLUTION = 16384
+
+
 class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
     @classmethod
     def INPUT_TYPES(s):
@@ -542,7 +567,7 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
 
     CATEGORY = "image"
 
-    def composite_with_switch(self, destination, source, x, y, resize_source, mask = None, enabled = True, invert_mask= False):
+    def composite_with_switch(self, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
         if not enabled:
             return (destination, )
         if invert_mask:
@@ -553,22 +578,24 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
 class CheckpointLoaderSimpleWithSwitch:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
+        return {"required": {"ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
                              },
                 "optional": {
                 "load_model": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
                 "load_clip": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
                 "load_vae": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-            }}
+        }}
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
     FUNCTION = "load_checkpoint"
 
     CATEGORY = "loaders"
 
-    def load_checkpoint(self, ckpt_name,load_model,load_clip,load_vae):
+    def load_checkpoint(self, ckpt_name, load_model, load_clip, load_vae):
         ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
-        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_model=load_model, output_vae=load_vae, output_clip=load_clip, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_model=load_model, output_vae=load_vae,
+                                                    output_clip=load_clip, embedding_directory=folder_paths.get_folder_paths("embeddings"))
         return out[:3]
+
 
 class ImageResizeTo8x:
     def __init__(self):
@@ -583,7 +610,6 @@ class ImageResizeTo8x:
     RETURN_TYPES = ("IMAGE", "MASK",)
     FUNCTION = "resize"
     CATEGORY = "image"
-
 
     @classmethod
     def INPUT_TYPES(s):
@@ -605,7 +631,6 @@ class ImageResizeTo8x:
             },
         }
 
-
     @classmethod
     def VALIDATE_INPUTS(s, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, **_):
         if side_ratio is not None:
@@ -623,7 +648,6 @@ class ImageResizeTo8x:
                 return f"For resize_mode {s.RESIZE_MODE_UPSCALE}, scale_factor should be larger than one but got {scale_factor}"
 
         return True
-
 
     @classmethod
     def parse_side_ratio(s, side_ratio):
@@ -644,19 +668,20 @@ class ImageResizeTo8x:
                 pixels = pixels.narrow(d + 1, x_offset, x)
         return pixels
 
-
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None,crop_to_8x=False):
-        validity = self.VALIDATE_INPUTS(action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio)
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, crop_to_8x=False):
+        validity = self.VALIDATE_INPUTS(
+            action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio)
         if validity is not True:
             raise Exception(validity)
-        
+
         height, width = pixels.shape[1:3]
         if mask_optional is None:
             mask = torch.zeros(1, height, width, dtype=torch.float32)
         else:
-            mask = mask_optional           
+            mask = mask_optional
             if mask.shape[1] != height or mask.shape[2] != width:
-                mask = torch.nn.functional.interpolate(mask.unsqueeze(0), size=(height, width), mode="bicubic").squeeze(0).clamp(0.0, 1.0)
+                mask = torch.nn.functional.interpolate(mask.unsqueeze(0), size=(
+                    height, width), mode="bicubic").squeeze(0).clamp(0.0, 1.0)
 
         crop_x, crop_y, pad_x, pad_y = (0.0, 0.0, 0.0, 0.0)
         if action == self.ACTION_TYPE_CROP:
@@ -687,8 +712,10 @@ class ImageResizeTo8x:
             scale_factor = 0.0
 
         if scale_factor > 0.0:
-            pixels = torch.nn.functional.interpolate(pixels.movedim(-1, 1), scale_factor=scale_factor, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
-            mask = torch.nn.functional.interpolate(mask.unsqueeze(0), scale_factor=scale_factor, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
+            pixels = torch.nn.functional.interpolate(
+                pixels.movedim(-1, 1), scale_factor=scale_factor, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
+            mask = torch.nn.functional.interpolate(mask.unsqueeze(
+                0), scale_factor=scale_factor, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
             height, width = pixels.shape[1:3]
 
             crop_x *= scale_factor
@@ -697,81 +724,142 @@ class ImageResizeTo8x:
             pad_y *= scale_factor
 
         if crop_x > 0.0 or crop_y > 0.0:
-            remove_x = (round(crop_x * crop_pad_position), round(crop_x * (1 - crop_pad_position))) if crop_x > 0.0 else (0, 0)
-            remove_y = (round(crop_y * crop_pad_position), round(crop_y * (1 - crop_pad_position))) if crop_y > 0.0 else (0, 0)
-            pixels = pixels[:, remove_y[0]:height - remove_y[1], remove_x[0]:width - remove_x[1], :]
-            mask = mask[:, remove_y[0]:height - remove_y[1], remove_x[0]:width - remove_x[1]]
+            remove_x = (round(crop_x * crop_pad_position), round(crop_x *
+                        (1 - crop_pad_position))) if crop_x > 0.0 else (0, 0)
+            remove_y = (round(crop_y * crop_pad_position), round(crop_y *
+                        (1 - crop_pad_position))) if crop_y > 0.0 else (0, 0)
+            pixels = pixels[:, remove_y[0]:height -
+                            remove_y[1], remove_x[0]:width - remove_x[1], :]
+            mask = mask[:, remove_y[0]:height - remove_y[1],
+                        remove_x[0]:width - remove_x[1]]
         elif pad_x > 0.0 or pad_y > 0.0:
-            add_x = (round(pad_x * crop_pad_position), round(pad_x * (1 - crop_pad_position))) if pad_x > 0.0 else (0, 0)
-            add_y = (round(pad_y * crop_pad_position), round(pad_y * (1 - crop_pad_position))) if pad_y > 0.0 else (0, 0)
+            add_x = (round(pad_x * crop_pad_position), round(pad_x *
+                     (1 - crop_pad_position))) if pad_x > 0.0 else (0, 0)
+            add_y = (round(pad_y * crop_pad_position), round(pad_y *
+                     (1 - crop_pad_position))) if pad_y > 0.0 else (0, 0)
 
-            new_pixels = torch.zeros(pixels.shape[0], height + add_y[0] + add_y[1], width + add_x[0] + add_x[1], pixels.shape[3], dtype=torch.float32)
-            new_pixels[:, add_y[0]:height + add_y[0], add_x[0]:width + add_x[0], :] = pixels
+            new_pixels = torch.zeros(pixels.shape[0], height + add_y[0] + add_y[1],
+                                     width + add_x[0] + add_x[1], pixels.shape[3], dtype=torch.float32)
+            new_pixels[:, add_y[0]:height + add_y[0],
+                       add_x[0]:width + add_x[0], :] = pixels
             pixels = new_pixels
 
-            new_mask = torch.ones(mask.shape[0], height + add_y[0] + add_y[1], width + add_x[0] + add_x[1], dtype=torch.float32)
-            new_mask[:, add_y[0]:height + add_y[0], add_x[0]:width + add_x[0]] = mask
+            new_mask = torch.ones(
+                mask.shape[0], height + add_y[0] + add_y[1], width + add_x[0] + add_x[1], dtype=torch.float32)
+            new_mask[:, add_y[0]:height + add_y[0],
+                     add_x[0]:width + add_x[0]] = mask
             mask = new_mask
 
             if pad_feathering > 0:
                 for i in range(mask.shape[0]):
                     for j in range(pad_feathering):
-                        feather_strength = (1 - j / pad_feathering) * (1 - j / pad_feathering)
+                        feather_strength = (
+                            1 - j / pad_feathering) * (1 - j / pad_feathering)
                         if add_x[0] > 0 and j < width:
                             for k in range(height):
-                                mask[i, k, add_x[0] + j] = max(mask[i, k, add_x[0] + j], feather_strength)
+                                mask[i, k, add_x[0] +
+                                     j] = max(mask[i, k, add_x[0] + j], feather_strength)
                         if add_x[1] > 0 and j < width:
                             for k in range(height):
-                                mask[i, k, width + add_x[0] - j - 1] = max(mask[i, k, width + add_x[0] - j - 1], feather_strength)
+                                mask[i, k, width + add_x[0] - j - 1] = max(
+                                    mask[i, k, width + add_x[0] - j - 1], feather_strength)
                         if add_y[0] > 0 and j < height:
                             for k in range(width):
-                                mask[i, add_y[0] + j, k] = max(mask[i, add_y[0] + j, k], feather_strength)
+                                mask[i, add_y[0] + j,
+                                     k] = max(mask[i, add_y[0] + j, k], feather_strength)
                         if add_y[1] > 0 and j < height:
                             for k in range(width):
-                                mask[i, height + add_y[0] - j - 1, k] = max(mask[i, height + add_y[0] - j - 1, k], feather_strength)
+                                mask[i, height + add_y[0] - j - 1, k] = max(
+                                    mask[i, height + add_y[0] - j - 1, k], feather_strength)
         if crop_to_8x:
             pixels = self.vae_encode_crop_pixels(pixels)
             mask = self.vae_encode_crop_pixels(mask)
         return (pixels, mask)
-    
+
+
+class TextPreview:
+    """this node code comes from ComfyUI-Custom-Scripts\py\show_text.py. thanks the orininal writer."""
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"forceInput": True}),
+            },
+            "hidden": {
+                "unique_id": "UNIQUE_ID",
+                "extra_pnginfo": "EXTRA_PNGINFO",
+            },
+        }
+
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "notify"
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
+
+    CATEGORY = "utils"
+
+    def notify(self, text, unique_id=None, extra_pnginfo=None):
+        if unique_id is not None and extra_pnginfo is not None:
+            if not isinstance(extra_pnginfo, list):
+                logger.error("Error: extra_pnginfo is not a list")
+            elif (
+                not isinstance(extra_pnginfo[0], dict)
+                or "workflow" not in extra_pnginfo[0]
+            ):
+                logger.error("Error: extra_pnginfo[0] is not a dict or missing 'workflow' key")
+            else:
+                workflow = extra_pnginfo[0]["workflow"]
+                node = next(
+                    (x for x in workflow["nodes"] if str(x["id"]) == str(unique_id[0])),
+                    None,
+                )
+                if node:
+                    node["widgets_values"] = [text]
+
+        return {"ui": {"text": text}, "result": (text,)}
+
 
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
-    "LoadImageMaskWithSwitch":LoadImageMaskWithSwitch,
-    "LoadImageWithoutListDir":LoadImageWithoutListDir,
-    "LoadImageMaskWithoutListDir":LoadImageMaskWithoutListDir,
-    "ImageCompositeMaskedWithSwitch":ImageCompositeMaskedWithSwitch,
+    "LoadImageMaskWithSwitch": LoadImageMaskWithSwitch,
+    "LoadImageWithoutListDir": LoadImageWithoutListDir,
+    "LoadImageMaskWithoutListDir": LoadImageMaskWithoutListDir,
+    "ImageCompositeMaskedWithSwitch": ImageCompositeMaskedWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
-    "IntAndIntAddOffsetLiteral":IntAndIntAddOffsetLiteral,
-    "IntMultipleAddLiteral":IntMultipleAddLiteral,
-    "ImageConcanateOfUtils":ImageConcanateOfUtils,
+    "IntAndIntAddOffsetLiteral": IntAndIntAddOffsetLiteral,
+    "IntMultipleAddLiteral": IntMultipleAddLiteral,
+    "ImageConcanateOfUtils": ImageConcanateOfUtils,
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
-    "SplitMask":SplitMask,
-    "MaskFastGrow":MaskFastGrow,
-    "MaskAutoSelector":MaskAutoSelector,
-    "CheckpointLoaderSimpleWithSwitch":CheckpointLoaderSimpleWithSwitch,
-    "ImageResizeTo8x":ImageResizeTo8x
+    "SplitMask": SplitMask,
+    "MaskFastGrow": MaskFastGrow,
+    "MaskAutoSelector": MaskAutoSelector,
+    "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
+    "ImageResizeTo8x": ImageResizeTo8x,
+    "TextPreview": TextPreview,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithSwitch": "Load Image with switch",
     "LoadImageWithoutListDir": "Load Image without listing input dir",
-    "LoadImageMaskWithSwitch":"Load Image as Mask with switch",
-    "LoadImageMaskWithoutListDir":"Load Image as Mask without listing input dir",
+    "LoadImageMaskWithSwitch": "Load Image as Mask with switch",
+    "LoadImageMaskWithoutListDir": "Load Image as Mask without listing input dir",
     "ImageCompositeMaskedWithSwitch": "Image Composite Masked with switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
-    "ConcatTextOfUtils":"Concat text",
-    "ModifyTextGender":"Modify Text Gender",
+    "ConcatTextOfUtils": "Concat text",
+    "ModifyTextGender": "Modify Text Gender",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
     "IntMultipleAddLiteral": "Int Multiple and Add Literal",
-    "ImageConcanateOfUtils":"Image Concanate of utils",
+    "ImageConcanateOfUtils": "Image Concanate of utils",
     "AdjustColorTemperature": "Adjust color temperature",
     "ColorCorrectOfUtils": "Color Correct Of Utils",
-    "SplitMask":"Split Mask by Contours",
-    "MaskFastGrow":"MaskGrow fast",
+    "SplitMask": "Split Mask by Contours",
+    "MaskFastGrow": "MaskGrow fast",
     "MaskAutoSelector": "Mask auto selector",
-    "CheckpointLoaderSimpleWithSwitch":"Load checkpoint with switch",
-    "ImageResizeTo8x": "Image resize to 8x"
+    "CheckpointLoaderSimpleWithSwitch": "Load checkpoint with switch",
+    "ImageResizeTo8x": "Image resize to 8x",
+    "TextPreview": "Preview Text",
 }

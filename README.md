@@ -50,3 +50,6 @@ Enhanced the official LoadCheckpoint node by integrating three switches. Each sw
 
 ## ImageResizeTo8x
 Modified the [image-resize-comfyui](https://github.com/palant/image-resize-comfyui) image resize node by adding logic to crop the resulting image size to 8 times size, similar to the VAE encode node. This avoids pixel differences when pasting back by the ImageCompositeMasked node.
+
+## TextPreview
+Added the node for convenience. The code is originally from ComfyUI-Custom-Scripts, thanks.
