@@ -624,7 +624,7 @@ class ImageResizeTo8x:
                 "side_ratio": ("STRING", {"default": "4:3"}),
                 "crop_pad_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "pad_feathering": ("INT", {"default": 20, "min": 0, "max": 8192, "step": 1}),
-                "all_szie_8x": (["disable","crop","resize"],),
+                "all_szie_8x": (["disable", "crop", "resize"],),
             },
             "optional": {
                 "mask_optional": ("MASK",),
@@ -667,7 +667,7 @@ class ImageResizeTo8x:
             if x != dims[d]:
                 pixels = pixels.narrow(d + 1, x_offset, x)
         return pixels
-    
+
     def resize_a_little_to_8x(sefl, image, mask):
         in_h, in_w = image.shape[1:3]
         out_h = (in_h // 8) * 8
@@ -786,7 +786,7 @@ class ImageResizeTo8x:
             pixels = self.vae_encode_crop_pixels(pixels)
             mask = self.vae_encode_crop_pixels(mask)
         elif all_szie_8x == "resize":
-            pixels, mask= self.resize_a_little_to_8x(pixels, mask)
+            pixels, mask = self.resize_a_little_to_8x(pixels, mask)
         return (pixels, mask)
 
 
@@ -816,22 +816,68 @@ class TextPreview:
     def notify(self, text, unique_id=None, extra_pnginfo=None):
         if unique_id is not None and extra_pnginfo is not None:
             if not isinstance(extra_pnginfo, list):
-                logger.error("Error: extra_pnginfo is not a list")
+                logger.warn("Error: extra_pnginfo is not a list")
             elif (
                 not isinstance(extra_pnginfo[0], dict)
                 or "workflow" not in extra_pnginfo[0]
             ):
-                logger.error("Error: extra_pnginfo[0] is not a dict or missing 'workflow' key")
+                logger.warn(
+                    "Error: extra_pnginfo[0] is not a dict or missing 'workflow' key")
             else:
                 workflow = extra_pnginfo[0]["workflow"]
                 node = next(
-                    (x for x in workflow["nodes"] if str(x["id"]) == str(unique_id[0])),
+                    (x for x in workflow["nodes"] if str(
+                        x["id"]) == str(unique_id[0])),
                     None,
                 )
                 if node:
                     node["widgets_values"] = [text]
 
         return {"ui": {"text": text}, "result": (text,)}
+
+
+class MatchImageRatioToPreset:
+    def __init__(self):
+        self.presets = [
+            (704, 1408), (704, 1344), (768, 1344), (768,
+                                                    1280), (832, 1216), (832, 1152),
+            (896, 1152), (896, 1088), (960, 1088), (960,
+                                                    1024), (1024, 1024), (1024, 960),
+            (1088, 960), (1088, 896), (1152,
+                                       896), (1152, 832), (1216, 832), (1280, 768),
+            (1344, 768), (1344, 704), (1408,
+                                       704), (1472, 704), (1536, 640), (1600, 640),
+            (1664, 576), (1728, 576)
+        ]
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("INT", "INT", "INT", "INT")
+    RETURN_NAMES = ("standard_width", "standard_height", "min", "max")
+    FUNCTION = "forward"
+
+    CATEGORY = "utils"
+
+    def forward(self, image):
+        h, w = image.shape[1:-1]
+        aspect_ratio = h / w
+
+        # 计算每个预设的宽高比，并与输入图像的宽高比进行比较
+        distances = [abs(aspect_ratio - h/w) for h, w in self.presets]
+        closest_index = np.argmin(distances)
+
+        # 选择最接近的预设尺寸
+        target_h, target_w = self.presets[closest_index]
+
+        max_v, min_v = max(target_h, target_w), min(target_h, target_w)
+        logger.debug((target_w, target_h, min_v, max_v))
+        return (target_w, target_h, min_v, max_v)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -853,6 +899,7 @@ NODE_CLASS_MAPPINGS = {
     "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
     "ImageResizeTo8x": ImageResizeTo8x,
     "TextPreview": TextPreview,
+    "MatchImageRatioToPreset": MatchImageRatioToPreset,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -875,4 +922,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CheckpointLoaderSimpleWithSwitch": "Load checkpoint with switch",
     "ImageResizeTo8x": "Image resize to 8x",
     "TextPreview": "Preview Text",
+    "MatchImageRatioToPreset": "Match image ratio to stardard size"
 }
