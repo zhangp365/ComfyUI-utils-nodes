@@ -624,7 +624,7 @@ class ImageResizeTo8x:
                 "side_ratio": ("STRING", {"default": "4:3"}),
                 "crop_pad_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "pad_feathering": ("INT", {"default": 20, "min": 0, "max": 8192, "step": 1}),
-                "crop_to_8x": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+                "all_szie_8x": (["disable","crop","resize"],),
             },
             "optional": {
                 "mask_optional": ("MASK",),
@@ -660,15 +660,26 @@ class ImageResizeTo8x:
             return None
 
     def vae_encode_crop_pixels(self, pixels):
-        dims = pixels.shape[1:-1]
+        dims = pixels.shape[1:3]
         for d in range(len(dims)):
             x = (dims[d] // 8) * 8
             x_offset = (dims[d] % 8) // 2
             if x != dims[d]:
                 pixels = pixels.narrow(d + 1, x_offset, x)
         return pixels
+    
+    def resize_a_little_to_8x(sefl, image, mask):
+        in_h, in_w = image.shape[1:3]
+        out_h = (in_h // 8) * 8
+        out_w = (in_w // 8) * 8
+        if in_h != out_h or in_w != out_w:
+            image = torch.nn.functional.interpolate(
+                image.movedim(-1, 1), size=(out_h, out_w), mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
+            mask = torch.nn.functional.interpolate(mask.unsqueeze(
+                0), size=(out_h, out_w), mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
+        return image, mask
 
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, crop_to_8x=False):
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable"):
         validity = self.VALIDATE_INPUTS(
             action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio)
         if validity is not True:
@@ -771,9 +782,11 @@ class ImageResizeTo8x:
                             for k in range(width):
                                 mask[i, height + add_y[0] - j - 1, k] = max(
                                     mask[i, height + add_y[0] - j - 1, k], feather_strength)
-        if crop_to_8x:
+        if all_szie_8x == "crop":
             pixels = self.vae_encode_crop_pixels(pixels)
             mask = self.vae_encode_crop_pixels(mask)
+        elif all_szie_8x == "resize":
+            pixels, mask= self.resize_a_little_to_8x(pixels, mask)
         return (pixels, mask)
 
 
