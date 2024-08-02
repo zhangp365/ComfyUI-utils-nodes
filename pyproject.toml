@@ -1,8 +1,10 @@
 [project]
 name = "comfyui-utils-nodes"
+
 description = "Nodes:LoadImageWithSwitch, ImageBatchOneOrMore, ModifyTextGender, ImageCompositeMaskedWithSwitch, ColorCorrectOfUtils, SplitMask, MaskFastGrow, CheckpointLoaderSimpleWithSwitch, ImageResizeTo8x, MatchImageRatioToPreset etc."
 version = "1.0.8"
-license = "LICENSE"
+license = { file = "LICENSE" }
+
 dependencies = []
 
 [project.urls]
