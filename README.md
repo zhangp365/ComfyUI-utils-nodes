@@ -53,3 +53,6 @@ Modified the [image-resize-comfyui](https://github.com/palant/image-resize-comfy
 
 ## TextPreview
 Added the node for convenience. The code is originally from ComfyUI-Custom-Scripts, thanks.
+
+## MatchImageRatioToPreset
+According to the input image ratio, decide which standard SDXL training size is the closest match. This is useful for subsequent image resizing and other processes.
