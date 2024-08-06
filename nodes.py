@@ -619,6 +619,8 @@ class ImageResizeTo8x:
                 "action": ([s.ACTION_TYPE_RESIZE, s.ACTION_TYPE_CROP, s.ACTION_TYPE_PAD],),
                 "smaller_side": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 8}),
                 "larger_side": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 8}),
+                "target_width": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 8}),
+                "target_height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 8}),
                 "scale_factor": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "resize_mode": ([s.RESIZE_MODE_DOWNSCALE, s.RESIZE_MODE_UPSCALE, s.RESIZE_MODE_ANY],),
                 "side_ratio": ("STRING", {"default": "4:3"}),
@@ -632,7 +634,7 @@ class ImageResizeTo8x:
         }
 
     @classmethod
-    def VALIDATE_INPUTS(s, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, **_):
+    def VALIDATE_INPUTS(s, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio,target_width,target_height, **_):
         if side_ratio is not None:
             if action != s.ACTION_TYPE_RESIZE and s.parse_side_ratio(side_ratio) is None:
                 return f"Invalid side ratio: {side_ratio}"
@@ -647,6 +649,8 @@ class ImageResizeTo8x:
             if resize_mode == s.RESIZE_MODE_UPSCALE and scale_factor > 0.0 and scale_factor < 1.0:
                 return f"For resize_mode {s.RESIZE_MODE_UPSCALE}, scale_factor should be larger than one but got {scale_factor}"
 
+        if (target_width == 0 and target_height != 0) or (target_width != 0 and target_height == 0):
+            return f"targe_width and target_height should be set or unset simultaneously"
         return True
 
     @classmethod
@@ -668,20 +672,25 @@ class ImageResizeTo8x:
                 pixels = pixels.narrow(d + 1, x_offset, x)
         return pixels
 
-    def resize_a_little_to_8x(sefl, image, mask):
+    def resize_a_little_to_8x(self, image, mask):
         in_h, in_w = image.shape[1:3]
         out_h = (in_h // 8) * 8
         out_w = (in_w // 8) * 8
         if in_h != out_h or in_w != out_w:
-            image = torch.nn.functional.interpolate(
-                image.movedim(-1, 1), size=(out_h, out_w), mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
-            mask = torch.nn.functional.interpolate(mask.unsqueeze(
-                0), size=(out_h, out_w), mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
+            image, mask = self.interpolate_to_target_size(image, mask, out_h, out_w)
         return image, mask
 
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable"):
+    def interpolate_to_target_size(self, image, mask, height, width):
+        image = torch.nn.functional.interpolate(
+                image.movedim(-1, 1), size=(height, width), mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
+        mask = torch.nn.functional.interpolate(mask.unsqueeze(
+                0), size=(height, width), mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
+            
+        return image, mask
+
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable",target_width=0,target_height=0):
         validity = self.VALIDATE_INPUTS(
-            action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio)
+            action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio,target_width,target_height)
         if validity is not True:
             raise Exception(validity)
 
@@ -722,7 +731,10 @@ class ImageResizeTo8x:
         if (resize_mode == self.RESIZE_MODE_DOWNSCALE and scale_factor >= 1.0) or (resize_mode == self.RESIZE_MODE_UPSCALE and scale_factor <= 1.0):
             scale_factor = 0.0
 
-        if scale_factor > 0.0:
+        if target_width != 0 and target_height!=0:
+            pixels, mask = self.interpolate_to_target_size(pixels, mask, target_height, target_width)
+            crop_x, crop_y, pad_x, pad_y = (0.0, 0.0, 0.0, 0.0)
+        elif scale_factor > 0.0:
             pixels = torch.nn.functional.interpolate(
                 pixels.movedim(-1, 1), scale_factor=scale_factor, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
             mask = torch.nn.functional.interpolate(mask.unsqueeze(
