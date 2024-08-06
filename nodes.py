@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image, ImageEnhance
 from .color_correct import ColorCorrectOfUtils
 import cv2
-
+from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
 
 app_dir = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))))
@@ -880,6 +880,32 @@ class MatchImageRatioToPreset:
         return (target_w, target_h, min_v, max_v)
 
 
+class UpscaleImageWithModelIfNeed(ImageUpscaleWithModel):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"upscale_model": ("UPSCALE_MODEL",),
+                             "image": ("IMAGE",),
+                             "tile_size": ("INT", {"default": 512, "min": 128, "max": 10000}),
+                             "threshold_of_xl_area": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 64.0, "step": 0.01}),
+                             }}
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "forward"
+
+    CATEGORY = "image/upscaling"
+
+    def forward(self, image, upscale_model, tile_size=512, threshold_of_xl_area=0.9):
+        h, w = image.shape[1:-1]
+        percent = h * w / (1024 * 1024)
+        if percent > threshold_of_xl_area:
+            return (image,)
+
+        return self.upscale(upscale_model, image, tile_size)
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch": LoadImageMaskWithSwitch,
@@ -900,6 +926,7 @@ NODE_CLASS_MAPPINGS = {
     "ImageResizeTo8x": ImageResizeTo8x,
     "TextPreview": TextPreview,
     "MatchImageRatioToPreset": MatchImageRatioToPreset,
+    "UpscaleImageWithModelIfNeed": UpscaleImageWithModelIfNeed,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -922,5 +949,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CheckpointLoaderSimpleWithSwitch": "Load checkpoint with switch",
     "ImageResizeTo8x": "Image resize to 8x",
     "TextPreview": "Preview Text",
-    "MatchImageRatioToPreset": "Match image ratio to stardard size"
+    "MatchImageRatioToPreset": "Match image ratio to stardard size",
+    "UpscaleImageWithModelIfNeed": "Upscale image using model if need",
 }

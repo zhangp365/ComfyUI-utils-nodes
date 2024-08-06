@@ -56,3 +56,6 @@ Added the node for convenience. The code is originally from ComfyUI-Custom-Scrip
 
 ## MatchImageRatioToPreset
 According to the input image ratio, decide which standard SDXL training size is the closest match. This is useful for subsequent image resizing and other processes.
+
+## UpscaleImageWithModelIfNeed
+Enhanced the official UpscaleImageWithModel node by adding a judge. If the input image area exceeds a predefined threshold, upscaling is bypassed. The threshold is a percentage of the SDXL standard size (1024x1024) area.
