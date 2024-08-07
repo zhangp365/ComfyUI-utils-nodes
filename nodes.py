@@ -250,6 +250,7 @@ class ModifyTextGender:
             "text": ("STRING", {"forceInput": True}),
         },
             "optional": {
+            "gender_prior_weight": ("FLOAT", {"default": 1, "min": 0, "max": 3, "step": 0.1}),
             "gender_alternative": ("STRING", {"forceInput": True}),
             "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
         },
@@ -264,21 +265,24 @@ class ModifyTextGender:
     GenderWordsConfig.load_config()
 
     @ staticmethod
-    def fun(text, gender_prior="", gender_alternative=None, age=-1, enabled=True):
-        gender = gender_prior if gender_prior else gender_alternative
+    def fun(text, gender_prior="", gender_alternative=None, age=-1, enabled=True,gender_prior_weight=1.0):
+        gender= gender_prior if gender_prior else gender_alternative
+        weight = gender_prior_weight if gender_prior else 1.0
         gender_map = GenderWordsConfig.get_config().get("gender_map", {})
         if not enabled or text is None or gender is None or gender.upper() not in gender_map:
             return (text,)
         result = ModifyTextGender.gender_swap(text, gender, gender_map)
 
-        result = ModifyTextGender.gender_add_words(result, gender)
+        result = ModifyTextGender.gender_add_words(result, gender, weight = weight)
         logger.info(f"ModifyTextGender result:{result}")
         return (result,)
 
     @ staticmethod
-    def gender_add_words(text, gender):
+    def gender_add_words(text, gender, weight = 1.0):
         gender_add_map = GenderWordsConfig.get_config().get("gender_add_words", {})
         prefixes = gender_add_map[gender.upper()]
+        if weight != 1.0:
+            prefixes = [f"({prefix}:{weight:.1f})" for prefix in prefixes]
         result = ", ".join(prefixes + [text])
         return result
 
