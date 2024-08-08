@@ -882,14 +882,14 @@ class MatchImageRatioToPreset:
 
     def forward(self, image):
         h, w = image.shape[1:-1]
-        aspect_ratio = h / w
+        aspect_ratio = w / h
 
         # 计算每个预设的宽高比，并与输入图像的宽高比进行比较
-        distances = [abs(aspect_ratio - h/w) for h, w in self.presets]
+        distances = [abs(aspect_ratio - w/h) for w,h in self.presets]
         closest_index = np.argmin(distances)
 
         # 选择最接近的预设尺寸
-        target_h, target_w = self.presets[closest_index]
+        target_w, target_h = self.presets[closest_index]
 
         max_v, min_v = max(target_h, target_w), min(target_h, target_w)
         logger.debug((target_w, target_h, min_v, max_v))
