@@ -314,6 +314,42 @@ class ModifyTextGender:
         return ' '.join(words)
 
 
+class GenderControlOutput:
+    """
+    This node will modify the prompt string according gender. gender words include M, F
+    """
+    @ classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "gender_prior": (["", "M", "F"],),
+            "male_text": ("STRING",  {"multiline": True, "defaultBehavior": "input"}),
+            "male_float": ("FLOAT", {"default": 1, "step": 0.1}),  
+            "male_int": ("INT", {"default": 1, "step": 1}),
+            "female_text": ("STRING",  {"multiline": True, "defaultBehavior": "input"}),
+            "female_float": ("FLOAT", {"default": 1, "step": 0.1}),  
+            "female_int": ("INT", {"default": 1, "step": 1}),
+        },
+            "optional": {
+            "gender_alternative": ("STRING", {"forceInput": True}),           
+            }
+        }
+
+    RETURN_TYPES = ("STRING","FLOAT","INT","BOOLEAN","BOOLEAN")
+    RETURN_NAMES = ("gender_text","float","int","is_male","is_female")
+    FUNCTION = "fun"
+    CATEGORY = "utils/text/operations"
+
+    @ staticmethod
+    def fun(gender_prior,male_text,male_float,male_int,female_text,female_float,female_int, gender_alternative=None):
+        gender= gender_prior if gender_prior else gender_alternative
+        if gender is None or gender.upper() not in ["M", "F"]:
+            raise Exception("can't get any gender input.")
+        if gender.upper()== "M":
+            return (male_text, male_float, male_int, True, False)
+        else:
+            return (female_text, female_float, female_int, False, True)
+        
+
 class ImageConcanateOfUtils:
     @classmethod
     def INPUT_TYPES(s):
@@ -931,6 +967,7 @@ NODE_CLASS_MAPPINGS = {
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
+    "GenderControlOutput": GenderControlOutput,
     "IntAndIntAddOffsetLiteral": IntAndIntAddOffsetLiteral,
     "IntMultipleAddLiteral": IntMultipleAddLiteral,
     "ImageConcanateOfUtils": ImageConcanateOfUtils,
@@ -954,6 +991,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageBatchOneOrMore": "Batch Images One or More",
     "ConcatTextOfUtils": "Concat text",
     "ModifyTextGender": "Modify Text Gender",
+    "GenderControlOutput": "Gender control output",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
     "IntMultipleAddLiteral": "Int Multiple and Add Literal",
     "ImageConcanateOfUtils": "Image Concanate of utils",

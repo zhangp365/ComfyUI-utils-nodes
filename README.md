@@ -36,6 +36,9 @@ This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](h
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
+## GenderControlOutput
+This node determines the output based on the input gender. If the gender input is 'M', it will output male-specific text, float, and integer values. If the gender input is 'F', it will output female-specific text, float, and integer values.
+
 ## SplitMask
 This node splits one mask into two masks of the same size according to the area of the submasks. If there are more than two areas, it will select the two largest submasks.
 
