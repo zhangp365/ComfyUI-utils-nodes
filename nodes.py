@@ -907,6 +907,8 @@ class MatchImageRatioToPreset:
         return {
             "required": {
                 "image": ("IMAGE",),
+                "width_offset": ("INT", {"default": 0, "min": -128, "max": 128, "step": 8}),
+                "height_offset": ("INT", {"default": 0, "min": -128, "max": 128, "step": 8}),
             }
         }
 
@@ -916,7 +918,7 @@ class MatchImageRatioToPreset:
 
     CATEGORY = "utils"
 
-    def forward(self, image):
+    def forward(self, image, width_offset=0, height_offset=0):
         h, w = image.shape[1:-1]
         aspect_ratio = w / h
 
@@ -926,6 +928,10 @@ class MatchImageRatioToPreset:
 
         # 选择最接近的预设尺寸
         target_w, target_h = self.presets[closest_index]
+        if width_offset != 0:
+            target_w += width_offset
+        if height_offset != 0:
+            target_h += height_offset
 
         max_v, min_v = max(target_h, target_w), min(target_h, target_w)
         logger.debug((target_w, target_h, min_v, max_v))
