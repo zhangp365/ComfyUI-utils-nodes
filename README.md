@@ -45,6 +45,9 @@ This node splits one mask into two masks of the same size according to the area 
 ## MaskFastGrow
 This node is designed for growing masks quickly. When using the official or other mask growth nodes, the speed slows down significantly with large grow values, such as above 20. In contrast, this node maintains consistent speed regardless of the grow value.
 
+## MaskFromFaceModel
+Generates a mask from the face model of the Reactor face swap node output. The mask covers the facial area below the eyes, excluding the forehead. If the forehead is crucial for your application, it's recommended to use a different mask or adjust the generated mask accordingly.
+
 ## MaskAutoSelector
 Check the three input masks. If any are available, return the first. If none are available, raise an exception.
 

@@ -20,6 +20,7 @@ from PIL import Image, ImageEnhance
 from .color_correct import ColorCorrectOfUtils
 import cv2
 from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
+from math import dist
 
 app_dir = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))))
@@ -47,7 +48,7 @@ class LoadImageWithSwitch(LoadImage):
                 }
                 }
 
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN")
     RETURN_NAMES = ("image", "mask", "enabled")
@@ -70,7 +71,7 @@ class LoadImageWithoutListDir(LoadImage):
                 }
                 }
 
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN", "STRING")
     RETURN_NAMES = ("image", "mask", "enabled", "filename")
@@ -97,7 +98,7 @@ class LoadImageMaskWithSwitch(LoadImageMask):
                 },
                 }
 
-    CATEGORY = "mask"
+    CATEGORY = "utils/mask"
 
     RETURN_TYPES = ("MASK", "BOOLEAN")
     RETURN_NAMES = ("mask", "enabled")
@@ -128,7 +129,7 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
                 },
                 }
 
-    CATEGORY = "mask"
+    CATEGORY = "utils/mask"
 
     RETURN_TYPES = ("MASK", "BOOLEAN")
     RETURN_NAMES = ("mask", "enabled")
@@ -158,7 +159,7 @@ class ImageBatchOneOrMore:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "batch"
 
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     def batch(self, image1, image2=None, image3=None, image4=None, image5=None, image6=None):
         images = [image1]
@@ -189,7 +190,7 @@ class ConcatTextOfUtils:
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
-    CATEGORY = "utils/text/operations"
+    CATEGORY = "utils/text"
 
     @ staticmethod
     def fun(text1, separator, text2):
@@ -261,7 +262,7 @@ class ModifyTextGender:
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
-    CATEGORY = "utils/text/operations"
+    CATEGORY = "utils/text"
     GenderWordsConfig.load_config()
 
     @ staticmethod
@@ -337,7 +338,7 @@ class GenderControlOutput:
     RETURN_TYPES = ("STRING","FLOAT","INT","BOOLEAN","BOOLEAN")
     RETURN_NAMES = ("gender_text","float","int","is_male","is_female")
     FUNCTION = "fun"
-    CATEGORY = "utils/text/operations"
+    CATEGORY = "utils/text"
 
     @ staticmethod
     def fun(gender_prior,male_text,male_float,male_int,female_text,female_float,female_int, gender_alternative=None):
@@ -369,7 +370,7 @@ class ImageConcanateOfUtils:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "concanate"
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     def concanate(self, image1, image2, direction):
         if image2 is None:
@@ -405,7 +406,7 @@ class SplitMask:
     RETURN_TYPES = ("MASK", "MASK",)
     RETURN_NAMES = ("mask", "mask",)
     FUNCTION = 'split_mask'
-    CATEGORY = 'mask'
+    CATEGORY = 'utils/mask'
 
     def split_mask(self, mask_prior, mask_alternative=None):
         mask = mask_prior if mask_prior is not None else mask_alternative
@@ -463,7 +464,7 @@ class MaskFastGrow:
 
     RETURN_TYPES = ("MASK",)
     FUNCTION = 'mask_grow'
-    CATEGORY = 'mask'
+    CATEGORY = 'utils/mask'
 
     def mask_grow(self, mask, invert_mask, grow, blur):
         if mask.dim() == 2:
@@ -508,7 +509,81 @@ class MaskFastGrow:
             result = torch.unsqueeze(result, 0)
         return (result,)
 
+class MaskFromFaceModel:
 
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {
+                "face_model": ("FACE_MODEL", ),
+                "size_as": ("IMAGE",),
+                "max_face_number": ("INT", {"default": -1, "min": -1, "max": 99, "step": 1}),
+            },
+            "optional": {
+            }
+        }
+
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = 'mask_get'
+    CATEGORY = 'utils/mask'
+
+    def mask_get(self, face_model, size_as, max_face_number):
+        if not isinstance(face_model,list):
+            face_models = [face_model]
+        else:
+            face_models = face_model
+
+        if max_face_number !=-1 and len(face_model) > max_face_number:
+            face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number)
+
+        h, w = size_as.shape[-3:-1]
+
+        result = np.zeros((h, w), dtype=np.uint8)
+        for face in face_models:
+            points = face.landmark_2d_106.astype(np.int32)  # Convert landmarks to integer format
+
+            points = points.reshape((-1, 1, 2))  # Reshape for cv2.drawContours
+
+            # Compute the convex hull for the landmarks
+            hull = cv2.convexHull(points)
+
+            # Draw the convex hull on the mask as well
+            cv2.drawContours(result, [hull], contourIdx=-1, color=255, thickness=cv2.FILLED)
+
+        result = torch.unsqueeze(torch.tensor(np.clip(result/255, 0, 1)), 0)
+        return (result,)
+    
+    def remove_unavaible_face_models(self, face_models, max_people_number):
+        max_lengths = []
+
+        # Calculate the maximum length for each group of keypoints
+        kpss = [f.kps for f in face_models]
+        for keypoints in kpss:
+            max_length = self.get_max_distance(keypoints)
+            max_lengths.append(max_length)
+
+        sorted_touple = sorted(zip(face_models, max_lengths), key=lambda x:x[1], reverse=True)
+
+        # Filter out keypoints groups that have a maximum length less than one-fourth of the largest maximum length
+        filtered_face_models = [
+            face_model for face_model, _ in sorted_touple[:max_people_number]
+            ]
+
+        return filtered_face_models
+
+    def get_max_distance(self, keypoints):
+        max_distance = 0
+
+        # Calculate the distance between every pair of keypoints
+        for i in range(len(keypoints)):
+            for j in range(i + 1, len(keypoints)):
+                if keypoints[i] is not None and keypoints[j] is not None:
+                    distance = dist(keypoints[i], keypoints[j])
+                    max_distance = max(max_distance, distance)
+
+        return max_distance
+    
 class MaskAutoSelector:
     @classmethod
     def INPUT_TYPES(self):
@@ -526,7 +601,7 @@ class MaskAutoSelector:
     RETURN_TYPES = ("MASK",)
     RETURN_NAMES = ("mask",)
     FUNCTION = 'select_mask'
-    CATEGORY = 'mask'
+    CATEGORY = 'utils/mask'
 
     def select_mask(self, mask_prior=None, mask_alternative=None, mask_third=None):
         if mask_prior is not None:
@@ -548,7 +623,7 @@ class IntAndIntAddOffsetLiteral:
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("int", "int add offset")
     FUNCTION = "get_int"
-    CATEGORY = "number/utils"
+    CATEGORY = "utils/numbers"
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -566,7 +641,7 @@ class IntMultipleAddLiteral:
     RETURN_TYPES = ("INT", "INT",)
     RETURN_NAMES = ("x", "ax + b")
     FUNCTION = "get_int"
-    CATEGORY = "number/utils"
+    CATEGORY = "utils/numbers"
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -605,7 +680,7 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "composite_with_switch"
 
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     def composite_with_switch(self, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
         if not enabled:
@@ -628,7 +703,7 @@ class CheckpointLoaderSimpleWithSwitch:
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
     FUNCTION = "load_checkpoint"
 
-    CATEGORY = "loaders"
+    CATEGORY = "utils/loaders"
 
     def load_checkpoint(self, ckpt_name, load_model, load_clip, load_vae):
         ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
@@ -649,7 +724,7 @@ class ImageResizeTo8x:
     RESIZE_MODE_ANY = "any"
     RETURN_TYPES = ("IMAGE", "MASK",)
     FUNCTION = "resize"
-    CATEGORY = "image"
+    CATEGORY = "utils/image"
 
     @classmethod
     def INPUT_TYPES(s):
@@ -863,7 +938,7 @@ class TextPreview:
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
 
-    CATEGORY = "utils"
+    CATEGORY = "utils/text"
 
     def notify(self, text, unique_id=None, extra_pnginfo=None):
         if unique_id is not None and extra_pnginfo is not None:
@@ -916,7 +991,7 @@ class MatchImageRatioToPreset:
     RETURN_NAMES = ("standard_width", "standard_height", "min", "max")
     FUNCTION = "forward"
 
-    CATEGORY = "utils"
+    CATEGORY = "utils/image"
 
     def forward(self, image, width_offset=0, height_offset=0):
         h, w = image.shape[1:-1]
@@ -953,7 +1028,7 @@ class UpscaleImageWithModelIfNeed(ImageUpscaleWithModel):
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "forward"
 
-    CATEGORY = "image/upscaling"
+    CATEGORY = "utils/image"
 
     def forward(self, image, upscale_model, tile_size=512, threshold_of_xl_area=0.9):
         h, w = image.shape[1:-1]
@@ -965,50 +1040,69 @@ class UpscaleImageWithModelIfNeed(ImageUpscaleWithModel):
 
 
 NODE_CLASS_MAPPINGS = {
+    #image
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch": LoadImageMaskWithSwitch,
     "LoadImageWithoutListDir": LoadImageWithoutListDir,
     "LoadImageMaskWithoutListDir": LoadImageMaskWithoutListDir,
     "ImageCompositeMaskedWithSwitch": ImageCompositeMaskedWithSwitch,
     "ImageBatchOneOrMore": ImageBatchOneOrMore,
+    "ImageConcanateOfUtils": ImageConcanateOfUtils,
+    "ColorCorrectOfUtils": ColorCorrectOfUtils,
+    "UpscaleImageWithModelIfNeed": UpscaleImageWithModelIfNeed,
+    "ImageResizeTo8x": ImageResizeTo8x,
+
+    # text
     "ConcatTextOfUtils": ConcatTextOfUtils,
     "ModifyTextGender": ModifyTextGender,
     "GenderControlOutput": GenderControlOutput,
+    "TextPreview": TextPreview,
+
+    # numbers
+    "MatchImageRatioToPreset": MatchImageRatioToPreset,
     "IntAndIntAddOffsetLiteral": IntAndIntAddOffsetLiteral,
     "IntMultipleAddLiteral": IntMultipleAddLiteral,
-    "ImageConcanateOfUtils": ImageConcanateOfUtils,
-    "ColorCorrectOfUtils": ColorCorrectOfUtils,
+    
+    # mask
     "SplitMask": SplitMask,
     "MaskFastGrow": MaskFastGrow,
     "MaskAutoSelector": MaskAutoSelector,
+    "MaskFromFaceModel": MaskFromFaceModel,
+
+    #loader
     "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
-    "ImageResizeTo8x": ImageResizeTo8x,
-    "TextPreview": TextPreview,
-    "MatchImageRatioToPreset": MatchImageRatioToPreset,
-    "UpscaleImageWithModelIfNeed": UpscaleImageWithModelIfNeed,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "LoadImageWithSwitch": "Load Image with switch",
-    "LoadImageWithoutListDir": "Load Image without listing input dir",
-    "LoadImageMaskWithSwitch": "Load Image as Mask with switch",
-    "LoadImageMaskWithoutListDir": "Load Image as Mask without listing input dir",
-    "ImageCompositeMaskedWithSwitch": "Image Composite Masked with switch",
+    # Image
+    "LoadImageWithSwitch": "Load Image with Switch",
+    "LoadImageMaskWithSwitch": "Load Image as Mask with Switch",
+    "LoadImageWithoutListDir": "Load Image without Listing Input Dir",
+    "LoadImageMaskWithoutListDir": "Load Image as Mask without Listing Input Dir",
+    "ImageCompositeMaskedWithSwitch": "Image Composite Masked with Switch",
     "ImageBatchOneOrMore": "Batch Images One or More",
-    "ConcatTextOfUtils": "Concat text",
+    "ImageConcanateOfUtils": "Image Concatenate of Utils",
+    "ColorCorrectOfUtils": "Color Correct of Utils",
+    "UpscaleImageWithModelIfNeed": "Upscale Image Using Model if Need",
+    "ImageResizeTo8x": "Image Resize to 8x",
+
+    # Text
+    "ConcatTextOfUtils": "Concat Text",
     "ModifyTextGender": "Modify Text Gender",
-    "GenderControlOutput": "Gender control output",
+    "GenderControlOutput": "Gender Control Output",
+    "TextPreview": "Preview Text",
+
+    # Number
+    "MatchImageRatioToPreset": "Match Image Ratio to Standard Size",
     "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
     "IntMultipleAddLiteral": "Int Multiple and Add Literal",
-    "ImageConcanateOfUtils": "Image Concanate of utils",
-    "AdjustColorTemperature": "Adjust color temperature",
-    "ColorCorrectOfUtils": "Color Correct Of Utils",
+
+    # Mask
     "SplitMask": "Split Mask by Contours",
-    "MaskFastGrow": "MaskGrow fast",
-    "MaskAutoSelector": "Mask auto selector",
-    "CheckpointLoaderSimpleWithSwitch": "Load checkpoint with switch",
-    "ImageResizeTo8x": "Image resize to 8x",
-    "TextPreview": "Preview Text",
-    "MatchImageRatioToPreset": "Match image ratio to stardard size",
-    "UpscaleImageWithModelIfNeed": "Upscale image using model if need",
+    "MaskFastGrow": "Mask Grow Fast",
+    "MaskAutoSelector": "Mask Auto Selector",
+    "MaskFromFaceModel": "Mask from FaceModel",
+
+    # Loader
+    "CheckpointLoaderSimpleWithSwitch": "Load Checkpoint with Switch",
 }
