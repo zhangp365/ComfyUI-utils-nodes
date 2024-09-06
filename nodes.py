@@ -583,7 +583,72 @@ class MaskFromFaceModel:
                     max_distance = max(max_distance, distance)
 
         return max_distance
+
+
+class MaskCoverFourCorners:
+
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {                
+                "width": ("INT", {"default": 1024, "min": 0, "max": 8096, "step": 8}),
+                "height": ("INT", {"default": 1024, "min": 0, "max": 8096, "step": 8}),
+                "radius": ("INT", {"default": 100, "min": 0, "max": 8096, "step": 5}),
+                "draw_top_left": ("BOOLEAN", {"default": False}),
+                "draw_top_right": ("BOOLEAN", {"default": False}),
+                "draw_bottom_right": ("BOOLEAN", {"default": True}),
+                "draw_bottom_left": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                "size_as": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = 'mask_get'
+    CATEGORY = 'utils/mask'
+
+    def mask_get(self, size_as=None, width=1024, height=1024, radius=100, 
+                            draw_top_left=False, draw_top_right=False, draw_bottom_right=True, draw_bottom_left=False):
+        if size_as is not None:
+            height, width = size_as.shape[-3:-1]
+        result = self.create_mask_with_arcs(width, height, radius,draw_top_left, draw_top_right,draw_bottom_right,draw_bottom_left)
+
+        result = torch.unsqueeze(torch.tensor(np.clip(result/255, 0, 1)), 0)
+        return (result,)
     
+    def create_mask_with_arcs(self, width=None, height=None, radius=50, 
+                            draw_top_left=True, draw_top_right=True, draw_bottom_right=True, draw_bottom_left=True):
+        """
+        Creates a mask with circular arcs at the corners.
+        
+        :param width: Width of the mask.
+        :param height: Height of the mask.
+        :param radius: Radius of the circular arcs.
+        :param draw_top_left: Boolean indicating whether to draw an arc at the top-left corner.
+        :param draw_top_right: Boolean indicating whether to draw an arc at the top-right corner.
+        :param draw_bottom_right: Boolean indicating whether to draw an arc at the bottom-right corner.
+        :param draw_bottom_left: Boolean indicating whether to draw an arc at the bottom-left corner.
+        :return: Mask image with arcs drawn.
+        """       
+
+        # Create a white mask
+        mask = np.ones((height, width), dtype=np.uint8) * 255
+        
+        # Draw arcs on the mask, filling them with black color
+        if draw_top_left:  # Top-left corner
+            cv2.ellipse(mask, (0, 0), (radius, radius), 0, 0, 90, 0, -1)  # Fill with black
+        if draw_top_right:  # Top-right corner
+            cv2.ellipse(mask, (width, 0), (radius, radius), 0, 90, 180, 0, -1)  # Fill with black
+        if draw_bottom_right:  # Bottom-right corner
+            cv2.ellipse(mask, (width, height), (radius, radius), 0, 180, 270, 0, -1)  # Fill with black
+        if draw_bottom_left:  # Bottom-left corner
+            cv2.ellipse(mask, (0, height), (radius, radius), 0, 0, -90, 0, -1)  # Fill with black
+        
+        return mask
+    
+
 class MaskAutoSelector:
     @classmethod
     def INPUT_TYPES(self):
@@ -1068,6 +1133,7 @@ NODE_CLASS_MAPPINGS = {
     "MaskFastGrow": MaskFastGrow,
     "MaskAutoSelector": MaskAutoSelector,
     "MaskFromFaceModel": MaskFromFaceModel,
+    "MaskCoverFourCorners": MaskCoverFourCorners,
 
     #loader
     "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
@@ -1102,6 +1168,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MaskFastGrow": "Mask Grow Fast",
     "MaskAutoSelector": "Mask Auto Selector",
     "MaskFromFaceModel": "Mask from FaceModel",
+    "MaskCoverFourCorners": "Mask Cover Four Corners",
 
     # Loader
     "CheckpointLoaderSimpleWithSwitch": "Load Checkpoint with Switch",

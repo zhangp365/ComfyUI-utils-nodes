@@ -51,6 +51,9 @@ Generates a mask from the face model of the Reactor face swap node output. The m
 ## MaskAutoSelector
 Check the three input masks. If any are available, return the first. If none are available, raise an exception.
 
+## MaskCoverFourCorners
+Generates a mask by covering the selected corners with circular edges. This mask can be used as an attention mask to remove watermarks from the corners.
+
 ## CheckpointLoaderSimpleWithSwitch
 Enhanced the official LoadCheckpoint node by integrating three switches. Each switch controls whether a specific component is loaded. When a switch is turned off, the corresponding component will not be loaded. if you use the extra vae and close the model's vae loading, that will save memory.
 
