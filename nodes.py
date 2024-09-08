@@ -366,28 +366,44 @@ class ImageConcanateOfUtils:
                 {
                     "default": 'right'
                 }),
-        }}
+        },
+        "optional":{
+            "image3": ("IMAGE",),
+            "image4": ("IMAGE",),
+            "image5": ("IMAGE",),
+            "image6": ("IMAGE",),
+        }
+        }
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "concanate"
     CATEGORY = "utils/image"
 
-    def concanate(self, image1, image2, direction):
-        if image2 is None:
-            return (image1,)
-        if image1.shape[1:] != image2.shape[1:]:
-            image2 = comfy.utils.common_upscale(
-                image2.movedim(-1, 1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1, -1)
-        if direction == 'right':
-            row = torch.cat((image1, image2), dim=2)
-        elif direction == 'down':
-            row = torch.cat((image1, image2), dim=1)
-        elif direction == 'left':
-            row = torch.cat((image2, image1), dim=2)
-        elif direction == 'up':
-            row = torch.cat((image2, image1), dim=1)
+    def concanate(self, image1, image2, image3=None, image4=None, image5=None, image6=None, direction='right'):
+        images = [image1, image2]
+        
+        # 添加非空的image3-6到列表中
+        for img in [image3, image4, image5, image6]:
+            if img is not None:
+                images.append(img)
+        
+        # 如果只有一张图片，直接返回
+        if len(images) == 1:
+            return (images[0],)
+        
+        # 调整所有图片的大小为第一张图片的大小
+        for i in range(1, len(images)):
+            if images[i].shape[1:] != images[0].shape[1:]:
+                images[i] = comfy.utils.common_upscale(
+                    images[i].movedim(-1, 1), images[0].shape[2], images[0].shape[1], "bilinear", "center").movedim(1, -1)
+        
+        # 根据方向拼接图片
+        if direction in ['right', 'left']:
+            row = torch.cat(images if direction == 'right' else [i for i in reversed(images)], dim=2)
+        elif direction in ['down', 'up']:
+            row = torch.cat(images if direction == 'down' else [i for i in reversed(images)], dim=1)
+        
         return (row,)
-
 
 class SplitMask:
 
