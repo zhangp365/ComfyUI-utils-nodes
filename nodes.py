@@ -1103,21 +1103,23 @@ class UpscaleImageWithModelIfNeed(ImageUpscaleWithModel):
     def INPUT_TYPES(s):
         return {"required": {"upscale_model": ("UPSCALE_MODEL",),
                              "image": ("IMAGE",),
-                             "tile_size": ("INT", {"default": 512, "min": 128, "max": 10000}),
                              "threshold_of_xl_area": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 64.0, "step": 0.01}),
+                             },
+                "hidden":{
+                            "tile_size": ("INT", {"default": 512, "min": 128, "max": 10000}),
                              }}
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "forward"
 
     CATEGORY = "utils/image"
 
-    def forward(self, image, upscale_model, tile_size=512, threshold_of_xl_area=0.9):
+    def forward(self, image, upscale_model, threshold_of_xl_area=0.9):
         h, w = image.shape[1:-1]
         percent = h * w / (1024 * 1024)
         if percent > threshold_of_xl_area:
             return (image,)
 
-        return self.upscale(upscale_model, image, tile_size)
+        return self.upscale(upscale_model, image)
 
 
 NODE_CLASS_MAPPINGS = {
