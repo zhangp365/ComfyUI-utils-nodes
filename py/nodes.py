@@ -21,10 +21,9 @@ from .color_correct import ColorCorrectOfUtils
 import cv2
 from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
 from math import dist
+import folder_paths
 
-app_dir = os.path.dirname(os.path.dirname(
-    os.path.dirname(os.path.realpath(__file__))))
-config_dir = os.path.join(app_dir, "config")
+config_dir = os.path.join(folder_paths.base_path, "config")
 if not os.path.exists(config_dir):
     os.makedirs(config_dir)
 
