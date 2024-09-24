@@ -68,3 +68,11 @@ According to the input image ratio, decide which standard SDXL training size is 
 
 ## UpscaleImageWithModelIfNeed
 Enhanced the official UpscaleImageWithModel node by adding a judge. If the input image area exceeds a predefined threshold, upscaling is bypassed. The threshold is a percentage of the SDXL standard size (1024x1024) area.
+
+## DetectorForNSFW
+This node adapts the original model and inference code from  [nudenet](https://github.com/notAI-tech/NudeNet.git) for use with Comfy. A small 10MB default model, [320n.onnx] (https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models), is provided. If you wish to use other models from that repository, download the  [ONNX model] (https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models) and place it in the models/nsfw directory, then set the appropriate detect_size.
+
+From initial testing, the filtering effect is better than classifier models such as Falconsai/nsfw_image_detection.
+
+<img src="assets/detectorForNSFW.png" width="100%"/>
+You can also adjust the confidence levels for various rules such as buttocks_exposed to be more lenient or strict. Lower confidence levels will filter out more potential NSFW images. Setting the value to 1 will stop filtering for that specific feature.
