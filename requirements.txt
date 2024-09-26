@@ -1,1 +1,8 @@
+
+
+#non essential dependencies:
+# DetectorForNSFW 
 onnxruntime>=1.19.2
+
+# DeepfaceAnalyzeFaceAttributes
+deepface==0.0.93

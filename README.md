@@ -76,3 +76,15 @@ From initial testing, the filtering effect is better than classifier models such
 
 <img src="assets/detectorForNSFW.png" width="100%"/>
 You can also adjust the confidence levels for various rules such as buttocks_exposed to be more lenient or strict. Lower confidence levels will filter out more potential NSFW images. Setting the value to 1 will stop filtering for that specific feature.
+
+## DeepfaceAnalyzeFaceAttributes
+This node integrates the [deepface](https://github.com/serengil/deepface) library to analyze face attributes (gender, race, emotion, age). It analyzes only the largest face in the image and supports processing one image at a time.
+<img src="assets/deepfaceAnalyzeFaceAttributes.png" width="100%"/>
+
+If the input image is a standard square face image, you can enable the standard_single_face_image switch. In this case, the node will skip face detection and analyze the attributes directly.
+
+Upon the first run, the node will download the [deepface](https://github.com/serengil/deepface) models, which may take some time.
+
+Note: If you encounter the following exception while running the node:
+ValueError: The layer sequential has never been called and thus has no defined input.
+please set the environment variable TF_USE_LEGACY_KERAS to 1, then restart ComfyUI.
