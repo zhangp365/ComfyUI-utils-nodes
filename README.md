@@ -85,6 +85,10 @@ If the input image is a standard square face image, you can enable the standard_
 
 Upon the first run, the node will download the [deepface](https://github.com/serengil/deepface) models, which may take some time.
 
-Note: If you encounter the following exception while running the node:
-ValueError: The layer sequential has never been called and thus has no defined input.
-please set the environment variable TF_USE_LEGACY_KERAS to 1, then restart ComfyUI.
+> **Note:** If you encounter the following exception while running the node:
+
+> ```
+> ValueError: The layer sequential has never been called and thus has no defined input.
+> ```
+
+> Please set the environment variable `TF_USE_LEGACY_KERAS` to `1`, then restart ComfyUI.
