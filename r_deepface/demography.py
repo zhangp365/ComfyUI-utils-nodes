@@ -5,10 +5,6 @@ from typing import Any, Dict, List, Union
 import numpy as np
 from tqdm import tqdm
 
-# project dependencies
-from deepface.modules import modeling, detection, preprocessing
-from deepface.models.demography import Gender, Race, Emotion
-
 
 def analyze(
     img_path: Union[str, np.ndarray],
@@ -21,6 +17,9 @@ def analyze(
     anti_spoofing: bool = False,
     is_single_face_image: bool = False,
 ) -> List[Dict[str, Any]]:
+    # project dependencies
+    from deepface.modules import modeling, detection, preprocessing
+    from deepface.models.demography import Gender, Race, Emotion
     """
     Analyze facial attributes such as age, gender, emotion, and race in the provided image.
 
