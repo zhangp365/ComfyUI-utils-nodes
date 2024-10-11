@@ -1042,6 +1042,34 @@ class TextPreview:
 
         return {"ui": {"text": text}, "result": (text,)}
 
+class TextInputAutoSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "component_input": ("STRING", {"multiline": True}),               
+            },
+            "optional":{
+                "alternative_input": ("STRING",{"forceInput": True}),
+            }
+        }
+    
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "select_input"
+    CATEGORY = "utils/text"
+
+    def select_input(self, component_input, alternative_input=""):
+        # 去除组件输入两端的空白字符
+        component_input = component_input.strip()
+        
+        # 如果组件输入为空或只包含空白字符，选择外部输入
+        if not component_input:
+            selected_input = alternative_input
+        else:
+            selected_input = component_input
+        
+        return (selected_input,)
+
 
 class MatchImageRatioToPreset:
     def __init__(self):
@@ -1139,6 +1167,7 @@ NODE_CLASS_MAPPINGS = {
     "ModifyTextGender": ModifyTextGender,
     "GenderControlOutput": GenderControlOutput,
     "TextPreview": TextPreview,
+    "TextInputAutoSelector": TextInputAutoSelector,
 
     # numbers
     "MatchImageRatioToPreset": MatchImageRatioToPreset,
@@ -1174,6 +1203,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ModifyTextGender": "Modify Text Gender",
     "GenderControlOutput": "Gender Control Output",
     "TextPreview": "Preview Text",
+    "TextInputAutoSelector": "Text Input Auto Selector",
 
     # Number
     "MatchImageRatioToPreset": "Match Image Ratio to Standard Size",

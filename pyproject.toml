@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-utils-nodes"
 description = "Nodes:LoadImageWithSwitch, ImageBatchOneOrMore, ModifyTextGender, GenderControlOutput, ImageCompositeMaskedWithSwitch, ColorCorrectOfUtils, SplitMask, MaskFastGrow, CheckpointLoaderSimpleWithSwitch, ImageResizeTo8x, MatchImageRatioToPreset, UpscaleImageWithModelIfNeed, MaskFromFaceModel, MaskCoverFourCorners, DetectorForNSFW, DeepfaceAnalyzeFaceAttributes etc."
-version = "1.1.6"
+version = "1.1.7"
 license = { file = "LICENSE" }
 dependencies = []
 

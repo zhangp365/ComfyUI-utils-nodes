@@ -63,6 +63,9 @@ Modified the [image-resize-comfyui](https://github.com/palant/image-resize-comfy
 ## TextPreview
 Added the node for convenience. The code is originally from ComfyUI-Custom-Scripts, thanks.
 
+## TextInputAutoSelector
+Check the component and alternative input. If the component input is not empty, return this text; otherwise, return the alternative text.
+
 ## MatchImageRatioToPreset
 According to the input image ratio, decide which standard SDXL training size is the closest match. This is useful for subsequent image resizing and other processes.
 
