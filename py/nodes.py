@@ -125,7 +125,8 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
                  "channel": (["red", "green", "blue", "alpha"], ), },
                 "optional": {
                     "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-                },
+                    "mask_repeat_number":("INT", {"default": 1, "min": 1, "step": 1}),
+                    },
                 }
 
     CATEGORY = "utils/mask"
@@ -134,10 +135,13 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
     RETURN_NAMES = ("mask", "enabled")
     FUNCTION = "load_image_with_switch"
 
-    def load_image_with_switch(self, image, channel, enabled=True):
+    def load_image_with_switch(self, image, channel, enabled=True, mask_repeat_number=1):
         if not enabled:
             return (None, enabled)
-        return self.load_image(image, channel) + (enabled, )
+        mask =  self.load_image(image, channel)[0] 
+        mask = mask.unsqueeze(0) if mask.dim() == 2 else mask
+        new_mask = mask.expand(mask_repeat_number, -1, -1)
+        return (new_mask,  enabled)
 
     @classmethod
     def VALIDATE_INPUTS(s, image, enabled):
