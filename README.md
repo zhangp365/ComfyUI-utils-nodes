@@ -15,6 +15,9 @@ When there are a lot of images in the input directory, loading image as Mask wit
 ## ImageCompositeMaskedWithSwitch
 Modified the official ImageCompositeMasked node by adding a switch. When turned off, it will return the destination image directly.
 
+## ImageCompositeMaskedOneByOne
+Modified the official ImageCompositeMasked node to process images one by one, instead of processing an entire batch at once. In video scenarios, processing in a batch may requires a significant amount of memory, but this method helps reduce memory usage.
+
 ## ImageBatchOneOrMore
 This node can input one or more images, the limit is six. It expands the functionality of the official ImageBatch node from two to multiple images.
 
