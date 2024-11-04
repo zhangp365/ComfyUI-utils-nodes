@@ -904,13 +904,13 @@ class ImageResizeTo8x:
 
         crop_x, crop_y, pad_x, pad_y = (0.0, 0.0, 0.0, 0.0)
         if action == self.ACTION_TYPE_CROP:
-            target_ratio = self.parse_side_ratio(side_ratio)
+            target_ratio = target_width / target_height if target_width != 0 and target_height!=0 else self.parse_side_ratio(side_ratio) 
             if height * target_ratio < width:
                 crop_x = width - height * target_ratio
             else:
                 crop_y = height - width / target_ratio
         elif action == self.ACTION_TYPE_PAD:
-            target_ratio = self.parse_side_ratio(side_ratio)
+            target_ratio = target_width / target_height if target_width != 0 and target_height!=0 else self.parse_side_ratio(side_ratio) 
             if height * target_ratio > width:
                 pad_x = height * target_ratio - width
             else:
@@ -930,10 +930,7 @@ class ImageResizeTo8x:
         if (resize_mode == self.RESIZE_MODE_DOWNSCALE and scale_factor >= 1.0) or (resize_mode == self.RESIZE_MODE_UPSCALE and scale_factor <= 1.0):
             scale_factor = 0.0
 
-        if target_width != 0 and target_height!=0:
-            pixels, mask = self.interpolate_to_target_size(pixels, mask, target_height, target_width)
-            crop_x, crop_y, pad_x, pad_y = (0.0, 0.0, 0.0, 0.0)
-        elif scale_factor > 0.0:
+        if scale_factor > 0.0:
             pixels = torch.nn.functional.interpolate(
                 pixels.movedim(-1, 1), scale_factor=scale_factor, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
             mask = torch.nn.functional.interpolate(mask.unsqueeze(
@@ -993,6 +990,10 @@ class ImageResizeTo8x:
                             for k in range(width):
                                 mask[i, height + add_y[0] - j - 1, k] = max(
                                     mask[i, height + add_y[0] - j - 1, k], feather_strength)
+        
+        if target_width != 0 and target_height!=0:
+            pixels, mask = self.interpolate_to_target_size(pixels, mask, target_height, target_width)
+        
         if all_szie_8x == "crop":
             pixels = self.vae_encode_crop_pixels(pixels)
             mask = self.vae_encode_crop_pixels(mask)
