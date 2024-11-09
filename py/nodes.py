@@ -22,6 +22,7 @@ import cv2
 from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
 from math import dist
 import folder_paths
+from .utils import tensor2np,np2tensor
 
 config_dir = os.path.join(folder_paths.base_path, "config")
 if not os.path.exists(config_dir):
@@ -532,14 +533,15 @@ class MaskFromFaceModel:
 
     @classmethod
     def INPUT_TYPES(self):
-
         return {
-            "required": {
-                "face_model": ("FACE_MODEL", ),
-                "size_as": ("IMAGE",),
+            "required": {                
+                "image": ("IMAGE",),
                 "max_face_number": ("INT", {"default": -1, "min": -1, "max": 99, "step": 1}),
+                "add_bbox_upper_points": ("BOOLEAN", {"default": False}),  # 新增参数
             },
             "optional": {
+                "faceanalysis": ("FACEANALYSIS", ),
+                "face_model": ("FACE_MODEL", ),
             }
         }
 
@@ -547,7 +549,15 @@ class MaskFromFaceModel:
     FUNCTION = 'mask_get'
     CATEGORY = 'utils/mask'
 
-    def mask_get(self, face_model, size_as, max_face_number):
+    def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None):
+        if faceanalysis is None and face_model is None:
+            raise Exception("both faceanalysis and face_model are none!")
+        
+        if face_model is None:
+            image_np = tensor2np(image)
+            image_np = image_np[0] if isinstance(image_np, list) else image_np
+            face_model = self.analyze_faces(faceanalysis, image_np)
+
         if not isinstance(face_model,list):
             face_models = [face_model]
         else:
@@ -556,11 +566,28 @@ class MaskFromFaceModel:
         if max_face_number !=-1 and len(face_model) > max_face_number:
             face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number)
 
-        h, w = size_as.shape[-3:-1]
+        h, w = image.shape[-3:-1]
 
         result = np.zeros((h, w), dtype=np.uint8)
         for face in face_models:
             points = face.landmark_2d_106.astype(np.int32)  # Convert landmarks to integer format
+            
+            if add_bbox_upper_points:
+                  # 获取bbox的坐标
+                x1, y1 = face.bbox[0:2]
+                x2, y2 = face.bbox[2:4]
+                
+                # 计算上边的1/4和3/4位置的点
+                width = x2 - x1
+                left_quarter_x = x1 + width // 4
+                right_quarter_x = x2 - width // 4
+                
+                # 创建两个新点
+                left_quarter_point = np.array([left_quarter_x, y1], dtype=np.int32)
+                right_quarter_point = np.array([right_quarter_x, y1], dtype=np.int32)
+                
+                # 将两个点添加到landmarks中
+                points = np.vstack((points, left_quarter_point, right_quarter_point))
 
             points = points.reshape((-1, 1, 2))  # Reshape for cv2.drawContours
 
@@ -603,7 +630,15 @@ class MaskFromFaceModel:
 
         return max_distance
 
-
+    def analyze_faces(self, insightface, img_data: np.ndarray):
+        for size in [(size, size) for size in range(640, 320, -320)]:
+            insightface.det_model.input_size = size
+            face = insightface.get(img_data)
+            if face:                
+                if 640 not in size:
+                    print(f"\033[33mINFO: InsightFace detection resolution lowered to {size}.\033[0m")
+                break
+        return face 
 class MaskCoverFourCorners:
 
     @classmethod
