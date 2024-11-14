@@ -841,7 +841,8 @@ class ImageResizeTo8x:
     RESIZE_MODE_DOWNSCALE = "reduce size only"
     RESIZE_MODE_UPSCALE = "increase size only"
     RESIZE_MODE_ANY = "any"
-    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_TYPES = ("IMAGE", "MASK", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "width", "height")
     FUNCTION = "resize"
     CATEGORY = "utils/image"
 
@@ -1034,7 +1035,9 @@ class ImageResizeTo8x:
             mask = self.vae_encode_crop_pixels(mask)
         elif all_szie_8x == "resize":
             pixels, mask = self.resize_a_little_to_8x(pixels, mask)
-        return (pixels, mask)
+        
+        height, width = pixels.shape[1:3]
+        return (pixels, mask, width, height)
 
 
 class TextPreview:
