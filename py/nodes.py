@@ -861,11 +861,11 @@ class ImageResizeTo8x:
                 "side_ratio": ("STRING", {"default": "4:3"}),
                 "crop_pad_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "pad_feathering": ("INT", {"default": 20, "min": 0, "max": 8192, "step": 1}),
-                "all_szie_8x": (["disable", "crop", "resize"],),
-                 "all_szie_16x": (["disable", "crop", "resize"],),
+                "all_szie_8x": (["disable", "crop", "resize"],),                
             },
             "optional": {
                 "mask_optional": ("MASK",),
+               "all_size_16x": (["disable", "crop", "resize"],),
             },
         }
 
@@ -924,7 +924,7 @@ class ImageResizeTo8x:
             
         return image, mask
 
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable",target_width=0,target_height=0,all_szie_16x="disable"):
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable",target_width=0,target_height=0,all_size_16x="disable"):
         validity = self.VALIDATE_INPUTS(
             action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio,target_width,target_height)
         if validity is not True:
@@ -1031,10 +1031,10 @@ class ImageResizeTo8x:
         if target_width != 0 and target_height!=0:
             pixels, mask = self.interpolate_to_target_size(pixels, mask, target_height, target_width)
         
-        if all_szie_16x == "crop":
+        if all_size_16x == "crop":
             pixels = self.vae_encode_crop_pixels(pixels,16)
             mask = self.vae_encode_crop_pixels(mask,16)
-        elif all_szie_16x == "resize":
+        elif all_size_16x == "resize":
             pixels, mask = self.resize_a_little_to_ratio(pixels, mask, ratio=16)
 
         elif all_szie_8x == "crop":
