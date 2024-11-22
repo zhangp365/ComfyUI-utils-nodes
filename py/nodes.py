@@ -862,6 +862,7 @@ class ImageResizeTo8x:
                 "crop_pad_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "pad_feathering": ("INT", {"default": 20, "min": 0, "max": 8192, "step": 1}),
                 "all_szie_8x": (["disable", "crop", "resize"],),
+                 "all_szie_16x": (["disable", "crop", "resize"],),
             },
             "optional": {
                 "mask_optional": ("MASK",),
@@ -898,19 +899,19 @@ class ImageResizeTo8x:
         except:
             return None
 
-    def vae_encode_crop_pixels(self, pixels):
+    def vae_encode_crop_pixels(self, pixels, ratio=8):
         dims = pixels.shape[1:3]
         for d in range(len(dims)):
-            x = (dims[d] // 8) * 8
-            x_offset = (dims[d] % 8) // 2
+            x = (dims[d] // ratio) * ratio
+            x_offset = (dims[d] % ratio) // 2
             if x != dims[d]:
                 pixels = pixels.narrow(d + 1, x_offset, x)
         return pixels
 
-    def resize_a_little_to_8x(self, image, mask):
+    def resize_a_little_to_ratio(self, image, mask,ratio=8):
         in_h, in_w = image.shape[1:3]
-        out_h = (in_h // 8) * 8
-        out_w = (in_w // 8) * 8
+        out_h = (in_h // ratio) * ratio
+        out_w = (in_w // ratio) * ratio
         if in_h != out_h or in_w != out_w:
             image, mask = self.interpolate_to_target_size(image, mask, out_h, out_w)
         return image, mask
@@ -923,7 +924,7 @@ class ImageResizeTo8x:
             
         return image, mask
 
-    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable",target_width=0,target_height=0):
+    def resize(self, pixels, action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio, crop_pad_position, pad_feathering, mask_optional=None, all_szie_8x="disable",target_width=0,target_height=0,all_szie_16x="disable"):
         validity = self.VALIDATE_INPUTS(
             action, smaller_side, larger_side, scale_factor, resize_mode, side_ratio,target_width,target_height)
         if validity is not True:
@@ -1030,11 +1031,17 @@ class ImageResizeTo8x:
         if target_width != 0 and target_height!=0:
             pixels, mask = self.interpolate_to_target_size(pixels, mask, target_height, target_width)
         
-        if all_szie_8x == "crop":
+        if all_szie_16x == "crop":
+            pixels = self.vae_encode_crop_pixels(pixels,16)
+            mask = self.vae_encode_crop_pixels(mask,16)
+        elif all_szie_16x == "resize":
+            pixels, mask = self.resize_a_little_to_ratio(pixels, mask, ratio=16)
+
+        elif all_szie_8x == "crop":
             pixels = self.vae_encode_crop_pixels(pixels)
             mask = self.vae_encode_crop_pixels(mask)
         elif all_szie_8x == "resize":
-            pixels, mask = self.resize_a_little_to_8x(pixels, mask)
+            pixels, mask = self.resize_a_little_to_ratio(pixels, mask, ratio=8)
         
         height, width = pixels.shape[1:3]
         return (pixels, mask, width, height)
