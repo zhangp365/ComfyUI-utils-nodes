@@ -383,11 +383,11 @@ class ImageConcanateOfUtils:
     FUNCTION = "concanate"
     CATEGORY = "utils/image"
 
-    def concanate(self, image1, image2, image3=None, image4=None, image5=None, image6=None, direction='right'):
-        images = [image1, image2]
+    def concanate(self, image1, image2=None, image3=None, image4=None, image5=None, image6=None, direction='right'):
+        images = [image1]
         
         # 添加非空的image3-6到列表中
-        for img in [image3, image4, image5, image6]:
+        for img in [image2,image3, image4, image5, image6]:
             if img is not None:
                 images.append(img)
         
