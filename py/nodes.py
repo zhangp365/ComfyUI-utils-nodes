@@ -542,6 +542,7 @@ class MaskFromFaceModel:
             "optional": {
                 "faceanalysis": ("FACEANALYSIS", ),
                 "face_model": ("FACE_MODEL", ),
+                "cant_detect_mask_mode": (["black", "white"], {"default": "black"}),
             }
         }
 
@@ -549,7 +550,7 @@ class MaskFromFaceModel:
     FUNCTION = 'mask_get'
     CATEGORY = 'utils/mask'
 
-    def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None):
+    def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None, cant_detect_mask_mode="black"):
         if faceanalysis is None and face_model is None:
             raise Exception("both faceanalysis and face_model are none!")
         
@@ -559,7 +560,10 @@ class MaskFromFaceModel:
             face_model = self.analyze_faces(faceanalysis, image_np)
 
         if not isinstance(face_model,list):
-            face_models = [face_model]
+            if face_model is None:
+                face_model = []
+            else:
+                face_models = [face_model]
         else:
             face_models = face_model
 
@@ -598,6 +602,9 @@ class MaskFromFaceModel:
             cv2.drawContours(result, [hull], contourIdx=-1, color=255, thickness=cv2.FILLED)
 
         result = torch.unsqueeze(torch.tensor(np.clip(result/255, 0, 1)), 0)
+
+        if cant_detect_mask_mode == "white" and len(face_models) == 0:
+            result = torch.ones_like(result)
         return (result,)
     
     def remove_unavaible_face_models(self, face_models, max_people_number):
