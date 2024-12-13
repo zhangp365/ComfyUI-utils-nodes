@@ -479,6 +479,8 @@ class MaskFastGrow:
                 "blur": ("INT", {"default": 4, "min": 0, "max": 999, "step": 1}),
             },
             "optional": {
+                "low_limit": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
+                "high_limit": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
             }
         }
 
@@ -486,7 +488,7 @@ class MaskFastGrow:
     FUNCTION = 'mask_grow'
     CATEGORY = 'utils/mask'
 
-    def mask_grow(self, mask, invert_mask, grow, blur):
+    def mask_grow(self, mask, invert_mask, grow, blur, low_limit=0, high_limit=1):
         if mask.dim() == 2:
             mask = torch.unsqueeze(mask, 0)
 
@@ -522,6 +524,12 @@ class MaskFastGrow:
 
             # Scale back to [0, 1]
             output = output_blurred.astype(np.float32) / 255.0
+
+            if low_limit > 0:
+                output = np.clip(output, low_limit, 1)
+            if high_limit < 1:
+                output = np.clip(output, 0, high_limit)
+
             out.append(torch.from_numpy(output))
 
         result = torch.stack(out, dim=0)
