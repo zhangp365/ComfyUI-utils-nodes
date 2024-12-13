@@ -29,7 +29,7 @@ class DetectorForNSFW:
                 "provider": (["CPU", "CUDA", "ROCM"], ),
             },
             "optional": {
-                "model_name": (comfy_paths.get_filename_list("nsfw"), {"default": None}),
+                "model_name": (comfy_paths.get_filename_list("nsfw") + [""], {"default": ""}),
                 "alternative_image": ("IMAGE",),
                 "buttocks_exposed": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.05}),
                 "female_breast_exposed": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.05}),
