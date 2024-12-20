@@ -654,6 +654,96 @@ class MaskFromFaceModel:
                     print(f"\033[33mINFO: InsightFace detection resolution lowered to {size}.\033[0m")
                 break
         return face 
+
+class MaskofCenter:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {                
+                "width": ("INT", {"default": 1024, "min": 0, "max": 8096, "step": 8}),
+                "height": ("INT", {"default": 1024, "min": 0, "max": 8096, "step": 8}),
+                "top": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "bottom": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "left": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "right": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "redius": ("FLOAT", {"default": 0.05, "min": 0.0, "max": 0.5, "step": 0.01}),
+            },
+            "optional": {
+                "size_as": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = 'mask_get'
+    CATEGORY = 'utils/mask'
+
+    def mask_get(self, size_as=None, width=1024, height=1024, top=0.25, bottom=0.25, left=0.25, right=0.25, redius=0.05):
+        if size_as is not None:
+            height, width = size_as.shape[-3:-1]
+            
+        # 创建全白色mask
+        mask = torch.ones((1, height, width), dtype=torch.float32)
+        
+        # 计算各边界的像素值
+        top_pixels = int(height * top)
+        bottom_pixels = int(height * bottom)
+        left_pixels = int(width * left)
+        right_pixels = int(width * right)        
+        # 将边界区域设为黑色(0)
+        if top > 0:
+            mask[:, :top_pixels, :] = 0
+        if bottom > 0:
+            mask[:, -bottom_pixels:, :] = 0
+        if left > 0:
+            mask[:, :, :left_pixels] = 0
+        if right > 0:
+            mask[:, :, -right_pixels:] = 0
+            
+        # 添加圆弧效果
+        if redius > 0:
+            mask = self.add_corner_radius(mask[0], top_pixels, bottom_pixels, left_pixels, right_pixels, redius)        
+            mask = torch.unsqueeze(mask, 0)
+            
+        return (mask,)
+
+    def add_corner_radius(self, mask, top_pixels, bottom_pixels, left_pixels, right_pixels, radius_percent):
+        """在mask的白色区域四个角添加圆弧效果
+        Args:
+            mask: 2D tensor mask
+            top_pixels: 顶部黑色区域高度
+            bottom_pixels: 底部黑色区域高度
+            left_pixels: 左侧黑色区域宽度
+            right_pixels: 右侧黑色区域宽度
+            radius_percent: 圆弧半径(相对于较短边的百分比)
+        """
+        height, width = mask.shape
+        min_side = min(height, width)
+        radius = int(min_side * radius_percent)
+        
+        if radius <= 0:
+            return mask
+        
+        # 创建圆形kernel
+        y, x = torch.meshgrid(torch.arange(radius), torch.arange(radius))
+        # 计算到圆心的距离
+        dist_from_center = torch.sqrt((x - (radius-1))**2 + (y - (radius-1))**2).float()
+        # 圆内为1，圆外为0
+        circle = (dist_from_center <= radius).float()
+        
+        # 左上角
+        mask[top_pixels:top_pixels+radius, left_pixels:left_pixels+radius] = circle
+        
+        # 右上角    
+        mask[top_pixels:top_pixels+radius, width-right_pixels-radius:width-right_pixels] = torch.flip(circle, [1])
+        
+        # 左下角
+        mask[height-bottom_pixels-radius:height-bottom_pixels, left_pixels:left_pixels+radius] = torch.flip(circle, [0])
+        
+        # 右下角 
+        mask[height-bottom_pixels-radius:height-bottom_pixels, width-right_pixels-radius:width-right_pixels] = torch.flip(circle, [0, 1])
+
+        return mask
+
 class MaskCoverFourCorners:
 
     @classmethod
@@ -1245,6 +1335,7 @@ NODE_CLASS_MAPPINGS = {
     "MaskAutoSelector": MaskAutoSelector,
     "MaskFromFaceModel": MaskFromFaceModel,
     "MaskCoverFourCorners": MaskCoverFourCorners,
+    "MaskofCenter": MaskofCenter,
 
     #loader
     "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
@@ -1281,6 +1372,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MaskAutoSelector": "Mask Auto Selector",
     "MaskFromFaceModel": "Mask from FaceModel",
     "MaskCoverFourCorners": "Mask Cover Four Corners",
+    "MaskofCenter": "Mask of Center",
 
     # Loader
     "CheckpointLoaderSimpleWithSwitch": "Load Checkpoint with Switch",
