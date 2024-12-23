@@ -560,7 +560,7 @@ class MaskFromFaceModel:
     CATEGORY = 'utils/mask'
 
     def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None, cant_detect_mask_mode="black", enabled=True):
-        if not enabled and cant_detect_mask_mode == "none":
+        if not enabled:
             return (None,)
         
         h, w = image.shape[-3:-1]
@@ -570,9 +570,6 @@ class MaskFromFaceModel:
             cant_detect_result = torch.zeros((1, h, w), dtype=torch.uint8)
         elif cant_detect_mask_mode == "white":
             cant_detect_result = torch.ones((1, h, w), dtype=torch.uint8)
-
-        if not enabled:
-            return (cant_detect_result,)
         
         if faceanalysis is None and face_model is None:
             raise Exception("both faceanalysis and face_model are none!")
