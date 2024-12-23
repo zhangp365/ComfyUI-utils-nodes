@@ -550,7 +550,8 @@ class MaskFromFaceModel:
             "optional": {
                 "faceanalysis": ("FACEANALYSIS", ),
                 "face_model": ("FACE_MODEL", ),
-                "cant_detect_mask_mode": (["black", "white"], {"default": "black"}),
+                "cant_detect_mask_mode": (["black", "white", "none"], {"default": "black"}),
+                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
             }
         }
 
@@ -558,7 +559,21 @@ class MaskFromFaceModel:
     FUNCTION = 'mask_get'
     CATEGORY = 'utils/mask'
 
-    def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None, cant_detect_mask_mode="black"):
+    def mask_get(self, image, max_face_number, add_bbox_upper_points, faceanalysis=None, face_model=None, cant_detect_mask_mode="black", enabled=True):
+        if not enabled and cant_detect_mask_mode == "none":
+            return (None,)
+        
+        h, w = image.shape[-3:-1]
+
+        cant_detect_result = None
+        if cant_detect_mask_mode == "black":
+            cant_detect_result = torch.zeros((1, h, w), dtype=torch.uint8)
+        elif cant_detect_mask_mode == "white":
+            cant_detect_result = torch.ones((1, h, w), dtype=torch.uint8)
+
+        if not enabled:
+            return (cant_detect_result,)
+        
         if faceanalysis is None and face_model is None:
             raise Exception("both faceanalysis and face_model are none!")
         
@@ -569,21 +584,21 @@ class MaskFromFaceModel:
 
         if not isinstance(face_model,list):
             if face_model is None:
-                face_model = []
+                face_models = []
             else:
                 face_models = [face_model]
         else:
             face_models = face_model
 
+        if len(face_models) == 0:
+            return (cant_detect_result,)
+        
         if max_face_number !=-1 and len(face_model) > max_face_number:
-            face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number)
-
-        h, w = image.shape[-3:-1]
+            face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number) 
 
         result = np.zeros((h, w), dtype=np.uint8)
         for face in face_models:
-            points = face.landmark_2d_106.astype(np.int32)  # Convert landmarks to integer format
-            
+            points = face.landmark_2d_106.astype(np.int32)  # Convert landmarks to integer format            
             if add_bbox_upper_points:
                   # 获取bbox的坐标
                 x1, y1 = face.bbox[0:2]
@@ -611,8 +626,6 @@ class MaskFromFaceModel:
 
         result = torch.unsqueeze(torch.tensor(np.clip(result/255, 0, 1)), 0)
 
-        if cant_detect_mask_mode == "white" and len(face_models) == 0:
-            result = torch.ones_like(result)
         return (result,)
     
     def remove_unavaible_face_models(self, face_models, max_people_number):
@@ -646,7 +659,7 @@ class MaskFromFaceModel:
         return max_distance
 
     def analyze_faces(self, insightface, img_data: np.ndarray):
-        for size in [(size, size) for size in range(640, 320, -320)]:
+        for size in [(size, size) for size in range(640, 310, -320)]:
             insightface.det_model.input_size = size
             face = insightface.get(img_data)
             if face:                
