@@ -1304,6 +1304,37 @@ class UpscaleImageWithModelIfNeed(ImageUpscaleWithModel):
         return self.upscale(upscale_model, image)
 
 
+class ImageAutoSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {               
+            },
+            "optional": {
+                "image_prior": ("IMAGE",),
+                "image_alternative": ("IMAGE",),
+                "image_third": ("IMAGE",)
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "select_image"
+    CATEGORY = "utils/image"
+
+    def select_image(self, image_prior=None, image_alternative=None, image_third=None):
+        if image_prior is not None:
+            image = image_prior
+        elif image_alternative is not None:
+            image = image_alternative
+        else:
+            image = image_third
+
+        if image is None:
+            raise RuntimeError("all image inputs are None")
+
+        return (image,)
+
 NODE_CLASS_MAPPINGS = {
     #image
     "LoadImageWithSwitch": LoadImageWithSwitch,
@@ -1316,6 +1347,7 @@ NODE_CLASS_MAPPINGS = {
     "ColorCorrectOfUtils": ColorCorrectOfUtils,
     "UpscaleImageWithModelIfNeed": UpscaleImageWithModelIfNeed,
     "ImageResizeTo8x": ImageResizeTo8x,
+    "ImageAutoSelector": ImageAutoSelector,
 
     # text
     "ConcatTextOfUtils": ConcatTextOfUtils,
@@ -1339,6 +1371,7 @@ NODE_CLASS_MAPPINGS = {
 
     #loader
     "CheckpointLoaderSimpleWithSwitch": CheckpointLoaderSimpleWithSwitch,
+    "ImageAutoSelector": ImageAutoSelector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1353,6 +1386,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ColorCorrectOfUtils": "Color Correct of Utils",
     "UpscaleImageWithModelIfNeed": "Upscale Image Using Model if Need",
     "ImageResizeTo8x": "Image Resize to 8x",
+    "ImageAutoSelector": "Image Auto Selector",
 
     # Text
     "ConcatTextOfUtils": "Concat Text",
