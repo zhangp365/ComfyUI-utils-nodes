@@ -481,6 +481,7 @@ class MaskFastGrow:
             "optional": {
                 "low_limit": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
                 "high_limit": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
             }
         }
 
@@ -488,7 +489,10 @@ class MaskFastGrow:
     FUNCTION = 'mask_grow'
     CATEGORY = 'utils/mask'
 
-    def mask_grow(self, mask, invert_mask, grow, blur, low_limit=0, high_limit=1):
+    def mask_grow(self, mask, invert_mask, grow, blur, low_limit=0, high_limit=1, enabled=True):
+        if not enabled:
+            return (mask,)
+        
         if mask.dim() == 2:
             mask = torch.unsqueeze(mask, 0)
 
