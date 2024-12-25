@@ -1349,7 +1349,37 @@ class ImageAutoSelector:
 
         return (image,)
 
+class BooleanControlOutput:
+    """
+    This node will output different values based on a boolean input
+    """
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "boolean_input": ("BOOLEAN", {"default": True, "label_on": "True", "label_off": "False"}),
+            "true_text": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "true_float": ("FLOAT", {"default": 1, "step": 0.05}),  
+            "true_int": ("INT", {"default": 1, "step": 1}),
+            "false_text": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            "false_float": ("FLOAT", {"default": 0, "step": 0.1}),  
+            "false_int": ("INT", {"default": 0, "step": 1}),
+        }}
+
+    RETURN_TYPES = ("STRING", "FLOAT", "INT", "BOOLEAN", "BOOLEAN")
+    RETURN_NAMES = ("text", "float", "int", "is_true", "is_false")
+    FUNCTION = "fun"
+    CATEGORY = "utils/text"
+
+    @staticmethod
+    def fun(boolean_input, true_text, true_float, true_int, false_text, false_float, false_int):
+        if boolean_input:
+            return (true_text, true_float, true_int, True, False)
+        else:
+            return (false_text, false_float, false_int, False, True)
+        
+        
 NODE_CLASS_MAPPINGS = {
+
     #image
     "LoadImageWithSwitch": LoadImageWithSwitch,
     "LoadImageMaskWithSwitch": LoadImageMaskWithSwitch,
@@ -1369,6 +1399,7 @@ NODE_CLASS_MAPPINGS = {
     "GenderControlOutput": GenderControlOutput,
     "TextPreview": TextPreview,
     "TextInputAutoSelector": TextInputAutoSelector,
+    "BooleanControlOutput": BooleanControlOutput,
 
     # numbers
     "MatchImageRatioToPreset": MatchImageRatioToPreset,
@@ -1408,6 +1439,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "GenderControlOutput": "Gender Control Output",
     "TextPreview": "Preview Text",
     "TextInputAutoSelector": "Text Input Auto Selector",
+    "BooleanControlOutput": "Boolean Control Output",
 
     # Number
     "MatchImageRatioToPreset": "Match Image Ratio to Standard Size",

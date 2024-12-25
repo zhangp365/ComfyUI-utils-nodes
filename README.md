@@ -42,6 +42,9 @@ This node adjusts the text to describe the gender based on the input. If the gen
 ## GenderControlOutput
 This node determines the output based on the input gender. If the gender input is 'M', it will output male-specific text, float, and integer values. If the gender input is 'F', it will output female-specific text, float, and integer values.
 
+## BooleanControlOutput
+This node outputs different values based on a boolean input. If the boolean input is True, it will output the values of true_text, true_float, true_int, True, and False. If the boolean input is False, it will output the values of false_text, false_float, false_int, False, and True.
+
 ## SplitMask
 This node splits one mask into two masks of the same size according to the area of the submasks. If there are more than two areas, it will select the two largest submasks.
 
@@ -59,11 +62,17 @@ Check the three input masks. If any are available, return the first. If none are
 ## MaskCoverFourCorners
 Generates a mask by covering the selected corners with circular edges. This mask can be used as an attention mask to remove watermarks from the corners.
 
+## MaskofCenter
+Generates a mask by covering the center of the image with a circular edge. This mask can be used as an attention mask, then model can focus on the center of the image.
+
 ## CheckpointLoaderSimpleWithSwitch
 Enhanced the official LoadCheckpoint node by integrating three switches. Each switch controls whether a specific component is loaded. When a switch is turned off, the corresponding component will not be loaded. if you use the extra vae and close the model's vae loading, that will save memory.
 
 ## ImageResizeTo8x
 Modified the [image-resize-comfyui](https://github.com/palant/image-resize-comfyui) image resize node by adding logic to crop the resulting image size to 8 times size, similar to the VAE encode node. This avoids pixel differences when pasting back by the ImageCompositeMasked node.
+
+## ImageAutoSelector
+This node is designed to automatically select the image from the input. If the prior image is not empty, return the prior image; otherwise, return the alternative image or the third image.
 
 ## TextPreview
 Added the node for convenience. The code is originally from ComfyUI-Custom-Scripts, thanks.
