@@ -687,7 +687,8 @@ class MaskofCenter:
             }
         }
 
-    RETURN_TYPES = ("MASK",)
+    RETURN_TYPES = ("MASK","INT","INT")
+    RETURN_NAMES = ("mask","width","height")
     FUNCTION = 'mask_get'
     CATEGORY = 'utils/mask'
 
@@ -718,7 +719,7 @@ class MaskofCenter:
             mask = self.add_corner_radius(mask[0], top_pixels, bottom_pixels, left_pixels, right_pixels, redius)        
             mask = torch.unsqueeze(mask, 0)
             
-        return (mask,)
+        return (mask, width, height)
 
     def add_corner_radius(self, mask, top_pixels, bottom_pixels, left_pixels, right_pixels, radius_percent):
         """在mask的白色区域四个角添加圆弧效果
