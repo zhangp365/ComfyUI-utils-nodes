@@ -23,6 +23,7 @@ from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
 from math import dist
 import folder_paths
 from .utils import tensor2np,np2tensor
+import hashlib
 
 config_dir = os.path.join(folder_paths.base_path, "config")
 if not os.path.exists(config_dir):
@@ -83,6 +84,16 @@ class LoadImageWithoutListDir(LoadImage):
             return None, None, enabled
         return self.load_image(image) + (enabled, ) + (image,)
 
+    
+    @classmethod
+    def IS_CHANGED(s, image, enabled):
+        if not enabled:
+            return ""
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
 
 class LoadImageMaskWithSwitch(LoadImageMask):
     @classmethod
@@ -152,6 +163,15 @@ class LoadImageMaskWithoutListDir(LoadImageMask):
             return "Invalid image file: {}".format(image)
         return True
 
+    @classmethod
+    def IS_CHANGED(s, image, channel, enabled=True, mask_repeat_number=1):
+        if not enabled:
+            return ""
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
 
 class ImageBatchOneOrMore:
 
