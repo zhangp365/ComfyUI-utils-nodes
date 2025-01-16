@@ -89,6 +89,9 @@ Enhanced the official UpscaleImageWithModel node by adding a judge. If the input
 ## ImageCompositeWatermark
 This node is designed to composite a watermark into the destination image. It can select the position of the watermark, resize the watermark according to the input ratio, and add a margin to the watermark.
 
+## ImageTransition
+This node is designed to generate a transition image between two images. It can generate a transition image between two images.
+
 ## DetectorForNSFW
 This node adapts the original model and inference code from  [nudenet](https://github.com/notAI-tech/NudeNet.git) for use with Comfy. A small 10MB default model, [320n.onnx](https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models), is provided. If you wish to use other models from that repository, download the  [ONNX model](https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models) and place it in the models/nsfw directory, then set the appropriate detect_size.
 

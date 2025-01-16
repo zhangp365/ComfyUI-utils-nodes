@@ -1,6 +1,6 @@
 from comfy_extras.nodes_mask import ImageCompositeMasked
 import torch
-
+import torch.nn.functional as F
 class ImageCompositeWatermark(ImageCompositeMasked):
     @classmethod
     def INPUT_TYPES(s):
@@ -56,14 +56,54 @@ class ImageCompositeWatermark(ImageCompositeMasked):
             
         return self.composite(destination, watermark, x, y, False, mask)
     
+class ImageTransition:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "first_image": ("IMAGE",),
+                "last_image": ("IMAGE",),
+                "frames": ("INT", {"default": 24, "min": 2, "max": 120, "step": 1}),
+                "transition_type": (["uniform", "smooth"], {"default": "uniform"}),
+                "smooth_effect": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 10.0, "step": 0.1}),
+            }
+        }
+    
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "generate_transition"
+    CATEGORY = "utils/image"
 
+    def generate_transition(self, first_image, last_image, frames, transition_type="uniform", smooth_effect=1.0):
+        # 生成插值权重
+        if transition_type == "uniform":
+            weights = torch.linspace(0, 1, frames)
+        else:  # sigmoid
+            x = torch.linspace(-20, 20, frames)
+            weights = torch.sigmoid(x / smooth_effect)
+        
+        # 创建输出张量列表
+        output_frames = []
+        
+        # 生成过渡帧
+        for w in weights:
+            # 使用权重进行插值
+            transition_frame = first_image * (1 - w) + last_image * w
+            output_frames.append(transition_frame)
+        
+        # 将所有帧拼接在一起
+        result = torch.cat(output_frames, dim=0)
+        
+        return (result,)
+    
 NODE_CLASS_MAPPINGS = {
 
     #image
     "ImageCompositeWatermark": ImageCompositeWatermark,
+    "ImageTransition": ImageTransition,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     # Image
     "ImageCompositeWatermark": "Image Composite Watermark",
+    "ImageTransition": "Image Transition",
 }
