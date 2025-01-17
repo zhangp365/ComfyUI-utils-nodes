@@ -92,6 +92,9 @@ This node is designed to composite a watermark into the destination image. It ca
 ## ImageTransition
 This node is designed to generate a transition image between two images. It can generate a transition image between two images.
 
+## TorchCompileModelAdvanced
+This node enables model compilation using torch.compile. It extends ComfyUI's original torch compile node by adding compile mode options and a toggle switch.
+
 ## DetectorForNSFW
 This node adapts the original model and inference code from  [nudenet](https://github.com/notAI-tech/NudeNet.git) for use with Comfy. A small 10MB default model, [320n.onnx](https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models), is provided. If you wish to use other models from that repository, download the  [ONNX model](https://github.com/notAI-tech/NudeNet?tab=readme-ov-file#available-models) and place it in the models/nsfw directory, then set the appropriate detect_size.
 
