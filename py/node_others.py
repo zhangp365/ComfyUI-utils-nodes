@@ -11,7 +11,7 @@ class EmptyConditioning:
     CATEGORY = "utils/conditioning"
 
     def get_empty_conditioning(self):
-        return ([[]], )
+        return ([(None,{"pooled_output":None}),], )
 
 NODE_CLASS_MAPPINGS = {
     "EmptyConditioning": EmptyConditioning,
