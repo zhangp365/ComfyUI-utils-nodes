@@ -67,12 +67,12 @@ files = os.listdir(py)
 for file in files:
     if not file.endswith(".py"):
         continue
-    name = os.path.splitext(file)[0]
-    imported_module = importlib.import_module(".py.{}".format(name), __name__)
+    name = os.path.splitext(file)[0]    
     try:
+        imported_module = importlib.import_module(".py.{}".format(name), __name__)
         NODE_CLASS_MAPPINGS = {**NODE_CLASS_MAPPINGS, **imported_module.NODE_CLASS_MAPPINGS}
         NODE_DISPLAY_NAME_MAPPINGS = {**NODE_DISPLAY_NAME_MAPPINGS, **imported_module.NODE_DISPLAY_NAME_MAPPINGS}
-    except:
-        pass
+    except Exception as e:
+        logger.exception(e)
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
