@@ -24,3 +24,6 @@ class TorchCompileModelAdvanced:
 NODE_CLASS_MAPPINGS = {
     "TorchCompileModelAdvanced": TorchCompileModelAdvanced,
 }
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "TorchCompileModelAdvanced": "Torch Compile Model Advanced"
+}
