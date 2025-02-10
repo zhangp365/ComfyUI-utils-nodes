@@ -44,7 +44,7 @@ class ImageCompositeWatermark(ImageCompositeMasked):
                 mask = torch.nn.functional.interpolate(mask.unsqueeze(
                     0), scale_factor=resize_ratio * scale, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
 
-        
+        water_h, water_w = watermark.shape[1:3]
         # 计算y坐标 - 总是在底部
         y = dest_h - water_h - margin
         
