@@ -68,7 +68,7 @@ for file in files:
     if not file.endswith(".py"):
         continue
     name = os.path.splitext(file)[0]
-    if not name.startswith("nodes"):
+    if not name.startswith("node"):
         continue
     try:
         imported_module = importlib.import_module(".py.{}".format(name), __name__)

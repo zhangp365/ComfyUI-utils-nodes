@@ -9,7 +9,7 @@ class ImageCompositeWatermark(ImageCompositeMasked):
                 "destination": ("IMAGE",),
                 "watermark": ("IMAGE",),
                 "position": (["bottom_right", "bottom_center", "bottom_left"], {"default": "bottom_right"}),
-                "resize_ratio": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.1}),
+                "resize_ratio": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.05}),
                 "margin": ("INT", {"default": 0, "min": 0, "max": 1000, "step": 1}),
             },
             "optional": {
@@ -26,17 +26,24 @@ class ImageCompositeWatermark(ImageCompositeMasked):
         if not enabled:
             return (destination,)
         
-        if resize_ratio != 1:
-            watermark = torch.nn.functional.interpolate(
-                watermark.movedim(-1, 1), scale_factor=resize_ratio, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
-            if mask is not None:
-                mask = torch.nn.functional.interpolate(mask.unsqueeze(
-                    0), scale_factor=resize_ratio, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
-
-
-        # 计算水印的位置
         dest_h, dest_w = destination.shape[1:3]
         water_h, water_w = watermark.shape[1:3]
+
+        scale = 1
+        if water_h > dest_h or water_w > dest_w:
+            # 计算需要的缩放比例
+            scale_h = dest_h / water_h
+            scale_w = dest_w / water_w
+            scale = min(scale_h, scale_w) 
+
+
+        if resize_ratio != 1 or scale != 1:
+            watermark = torch.nn.functional.interpolate(
+                watermark.movedim(-1, 1), scale_factor=resize_ratio * scale, mode="bicubic", antialias=True).movedim(1, -1).clamp(0.0, 1.0)
+            if mask is not None:
+                mask = torch.nn.functional.interpolate(mask.unsqueeze(
+                    0), scale_factor=resize_ratio * scale, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
+
         
         # 计算y坐标 - 总是在底部
         y = dest_h - water_h - margin
