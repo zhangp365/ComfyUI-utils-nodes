@@ -122,3 +122,5 @@ Upon the first run, the node will download the [deepface](https://github.com/ser
 ## EmptyConditioning
 This node is designed to return an empty conditioning, the size is zero. It can be used to replace the conditioning when the conditioning is not actually needed.
 
+## CropByMaskToSpecificSize
+This node is designed to crop the image by the mask to a specific size.
