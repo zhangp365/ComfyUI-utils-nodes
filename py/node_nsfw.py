@@ -39,8 +39,8 @@ class DetectorForNSFW:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("filtered_image", "detect_result")
+    RETURN_TYPES = ("IMAGE", "STRING", "IMAGE")
+    RETURN_NAMES = ("output_image", "detect_result", "filtered_image")
     FUNCTION = "filter_exposure"
 
     CATEGORY = "utils/filter"
@@ -77,22 +77,23 @@ class DetectorForNSFW:
         if not isinstance(images, List):
             images = [images]
 
-        results, result_info = [],[]
+        results, result_info, filtered_results = [],[],[]
         for img in images:
             detect_result = self.model.detect(img)
             
             logger.debug(f"nudenet detect result:{detect_result}")
-            filtered_results = []
+            detected_results = []
             for item in detect_result:
                 label = item['class']
                 score = item['score']
                 confidence_level = kwargs.get(label.lower())
                 if label.lower() in kwargs and score > confidence_level:
-                    filtered_results.append(item)
+                    detected_results.append(item)
             info = {"detect_result":detect_result}
-            if len(filtered_results) == 0:
+            if len(detected_results) == 0:
                 results.append(img)
                 info["nsfw"] = False
+                filtered_results.append(img)
             else:
                 placeholder_image = alternative_image if alternative_image is not None else np.ones_like(img) * 255
                 results.append(placeholder_image)
@@ -101,8 +102,9 @@ class DetectorForNSFW:
             result_info.append(info)
 
         result_tensor = np2tensor(results)
+        filtered_tensor = np2tensor(filtered_results)
         result_info = json.dumps(result_info)
-        return (result_tensor, result_info,)
+        return (result_tensor, result_info, filtered_tensor)
 
     def init_model(self, model_name, detect_size, provider):
         model_path = comfy_paths.get_full_path("nsfw", model_name) if model_name else None

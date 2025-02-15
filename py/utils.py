@@ -12,6 +12,8 @@ def tensor2np(tensor: torch.Tensor):
 
 def np2tensor(img_np: Union[np.ndarray, List[np.ndarray]]) -> torch.Tensor:
     if isinstance(img_np, list):
+        if len(img_np) == 0:
+            return torch.tensor([])
         return torch.cat([np2tensor(img) for img in img_np], dim=0)
     return torch.from_numpy(img_np.astype(np.float32) / 255.0).unsqueeze(0)
 

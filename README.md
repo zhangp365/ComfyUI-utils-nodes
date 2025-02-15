@@ -103,6 +103,9 @@ From initial testing, the filtering effect is better than classifier models such
 <img src="assets/detectorForNSFW.png" width="100%"/>
 You can also adjust the confidence levels for various rules such as buttocks_exposed to be more lenient or strict. Lower confidence levels will filter out more potential NSFW images. Setting the value to 1 will stop filtering for that specific feature.
 
+### output
+The output_image includes the original image and the alternative image or the blank image. detect_result is the result of the detection with json format. filtered_image only includes the image after filtering, if it is just one image and nsfw, it raises an exception in the save_image node.
+
 ## DeepfaceAnalyzeFaceAttributes
 This node integrates the [deepface](https://github.com/serengil/deepface) library to analyze face attributes (gender, race, emotion, age). It analyzes only the largest face in the image and supports processing one image at a time.
 <img src="assets/deepfaceAnalyzeFaceAttributes.png" width="100%"/>
