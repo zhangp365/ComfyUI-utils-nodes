@@ -238,7 +238,7 @@ class GenderWordsConfig:
         gender_map['M'] = {value: key for key,
                            value in gender_map['F'].items()}
         config = {"gender_map": gender_map, "gender_add_words": {
-            "M": ["male",], "F": ["female"], "error_words": {"person",}}}
+            "M": ["male",], "F": ["female"], },"error_words": {"person",}}
         with open(file_path, 'w') as file:
             yaml.dump(config, file)
 
