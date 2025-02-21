@@ -238,7 +238,7 @@ class GenderWordsConfig:
         gender_map['M'] = {value: key for key,
                            value in gender_map['F'].items()}
         config = {"gender_map": gender_map, "gender_add_words": {
-            "M": ["male",], "F": ["female"]}}
+            "M": ["male",], "F": ["female"], "error_words": {"person",}}}
         with open(file_path, 'w') as file:
             yaml.dump(config, file)
 
@@ -319,6 +319,8 @@ class ModifyTextGender:
             masks = ""
             case = 'lower'
             original_word = word.lower()
+            if original_word in GenderWordsConfig.get_config().get("error_words", {}):
+                continue
             if word.endswith(".") or word.endswith(",") or word.endswith("'") or word.endswith('"') or word.endswith(":"):
                 case = "masks"
                 original_word,  masks = original_word[:-1], original_word[-1]
