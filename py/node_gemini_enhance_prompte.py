@@ -130,10 +130,11 @@ class GeminiPromptEnhance:
         return [{"text": text_content}]
 
     def generate_content(self, prompt, text_input=None, api_key="", proxy="",
-                        max_output_tokens=8192, temperature=0.4, gender="", enabled=True):
+                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True):
         if not enabled:
             return (text_input,)
         
+        gender = gender_prior if gender_prior else gender_alternative
         # 生成缓存键
         cache_key = f"{text_input or ''}_{gender}"
         
