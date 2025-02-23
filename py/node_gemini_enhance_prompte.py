@@ -109,7 +109,8 @@ class GeminiPromptEnhance:
                 "proxy": ("STRING", {"default": ""}),
                 "max_output_tokens": ("INT", {"default": 8192, "min": 1, "max": 8192}),
                 "temperature": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.1}),
-                "gender": (["","M", "F"], {"default": ""}),
+                "gender_prior": (["","M", "F"], {"default": ""}),
+                "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
             }
         }
