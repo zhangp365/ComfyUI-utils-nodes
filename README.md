@@ -39,6 +39,18 @@ This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](h
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
+## GeminiPromptEnhance
+This node is designed to enhance the text description of the image, using the latest Gemini 2.0 flash model. It can add quality descriptors, lighting descriptions, scene descriptions, and skin descriptions to the text. and according to the gender input, can modifiy the content about gender.
+
+use this node, must get your free API key from Google AI Studio:
+   - Visit [Google AI Studio](https://aistudio.google.com/prompts/new_chat)
+   - Log in with your Google account
+   - Click on "Get API key" or go to settings
+   - Create a new API key
+   - Copy the API key for use in the node's input or gemini_config.json
+
+this code is original from https://github.com/ShmuelRonen/ComfyUI-Gemini_Flash_2.0_Exp, added new features. thanks to @ShmuelRonen.
+
 ## GenderControlOutput
 This node determines the output based on the input gender. If the gender input is 'M', it will output male-specific text, float, and integer values. If the gender input is 'F', it will output female-specific text, float, and integer values.
 

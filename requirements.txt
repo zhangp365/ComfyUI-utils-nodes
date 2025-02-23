@@ -8,3 +8,6 @@ onnxruntime>=1.19.2
 deepface==0.0.93
 ultralytics
 tf-keras
+
+# Gemini_prompt_enhance nod
+google-generativeai>0.4.1
