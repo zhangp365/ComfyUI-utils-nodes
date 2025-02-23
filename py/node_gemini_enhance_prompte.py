@@ -164,7 +164,7 @@ class GeminiPromptEnhance:
             save_config({"GEMINI_API_KEY": self.api_key, "PROXY": self.proxy})
 
         if not self.api_key:
-            raise ValueError("API key not found in config.json or node input")
+            raise ValueError("API key not found in gemini_config.yml or node input")
 
         model_name = 'models/gemini-2.0-flash-exp'
         model = genai.GenerativeModel(model_name)
