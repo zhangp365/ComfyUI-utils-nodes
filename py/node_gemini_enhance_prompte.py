@@ -7,6 +7,8 @@ from collections import OrderedDict
 import folder_paths
 import logging
 import yaml
+from google.api_core import retry
+from google.generativeai.types import RequestOptions
 logger = logging.getLogger(__name__)
 
 config_dir = os.path.join(folder_paths.base_path, "config")
@@ -180,7 +182,8 @@ class GeminiPromptEnhance:
         with temporary_env_var('HTTP_PROXY', self.proxy), temporary_env_var('HTTPS_PROXY', self.proxy):
             try:           
                 content_parts = self.prepare_content(prompt, text_input, gender)
-                response = model.generate_content(content_parts, generation_config=generation_config)
+                response = model.generate_content(content_parts, generation_config=generation_config, request_options= RequestOptions(
+                    timeout=20))
                 generated_content = response.text
                 
                 # 更新缓存
