@@ -7,7 +7,7 @@ onnxruntime>=1.19.2
 # DeepfaceAnalyzeFaceAttributes
 deepface==0.0.93
 ultralytics
-tf-keras
+tf-keras==2.17.0
 
 # Gemini_prompt_enhance nod
 google-generativeai>0.4.1
