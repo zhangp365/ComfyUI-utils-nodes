@@ -192,6 +192,7 @@ class GeminiPromptEnhance:
                 self.save_cache()
                 
             except Exception as e:
+                logger.exception(e)
                 if request_exception_handle == "rais_exceptipn":
                     raise e
                 elif request_exception_handle == "output_exception":
