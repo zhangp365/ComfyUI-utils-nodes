@@ -1,6 +1,7 @@
 # this code is original from https://github.com/ShmuelRonen/ComfyUI-Gemini_Flash_2.0_Exp, added cache and gender support
 import os
-import json
+import sys
+sys.path.append(".")
 import google.generativeai as genai
 from contextlib import contextmanager
 from collections import OrderedDict
@@ -64,6 +65,8 @@ class LRUCache(OrderedDict):
             self.popitem(last=False)
 
 class GeminiPromptEnhance:
+    default_prompt = "Edit and enhance the text description of the image. \nAdd quality descriptors, like 'A high-quality photo, an 8K photo.' \nAdd lighting descriptions based on the scene, like 'The lighting is natural and bright, casting soft shadows.' \nAdd scene descriptions according to the context, like 'The overall mood is serene and peaceful.' \nIf a person is in the scene, include a description of the skin, such as 'natural skin tones and ensure the skin appears realistic with clear, fine details.' \n\nOnly output the result of the text, no others.\nthe text is:"
+
     def __init__(self, api_key=None, proxy=None):
         config = get_config()
         self.api_key = api_key or config.get("GEMINI_API_KEY")
@@ -99,11 +102,9 @@ class GeminiPromptEnhance:
 
     @classmethod
     def INPUT_TYPES(cls):
-        default_prompt = "Edit and enhance the text description of the image. \nAdd quality descriptors, like 'A high-quality photo, an 8K photo.' \nAdd lighting descriptions based on the scene, like 'The lighting is natural and bright, casting soft shadows.' \nAdd scene descriptions according to the context, like 'The overall mood is serene and peaceful.' \nIf a person is in the scene, include a description of the skin, such as 'natural skin tones and ensure the skin appears realistic with clear, fine details.' \n\nOnly output the result of the text, no others.\nthe text is:"
-
         return {
             "required": {
-                "prompt": ("STRING", {"default": default_prompt, "multiline": True}),
+                "prompt": ("STRING", {"default": cls.default_prompt, "multiline": True}),
             },
             "optional": {
                 "text_input": ("STRING", {"default": "", "multiline": True}),
@@ -114,7 +115,7 @@ class GeminiPromptEnhance:
                 "gender_prior": (["","M", "F"], {"default": ""}),
                 "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
-                "request_exception_handle": (["bypass","rais_exceptipn","output_exception"], {"default":"bypass"})            
+                "request_exception_handle": (["bypass","raise_exception","output_exception"], {"default":"bypass"})            
             }
         }
 
@@ -179,28 +180,35 @@ class GeminiPromptEnhance:
             max_output_tokens=max_output_tokens,
             temperature=temperature
         )
-
-        with temporary_env_var('HTTP_PROXY', self.proxy), temporary_env_var('HTTPS_PROXY', self.proxy):
-            try:           
-                content_parts = self.prepare_content(prompt, text_input, gender)
-                response = model.generate_content(content_parts, generation_config=generation_config, request_options= RequestOptions(
-                    timeout=8))
-                generated_content = response.text
-                
-                # 更新缓存
-                self.cache.put(cache_key, generated_content)
-                self.save_cache()
-                
-            except Exception as e:
-                logger.exception(e)
-                if request_exception_handle == "rais_exceptipn":
-                    raise e
-                elif request_exception_handle == "output_exception":
-                    generated_content = f"Error: {str(e)}"
-                else:
-                    generated_content = text_input
+        logger.debug(f"self.proxy: {self.proxy}")
+        if self.proxy:
+            with temporary_env_var('HTTP_PROXY', self.proxy), temporary_env_var('HTTPS_PROXY', self.proxy):
+                generated_content = self.do_request(model, generation_config, prompt, text_input, gender,cache_key, request_exception_handle)
+        else:
+            generated_content = self.do_request(model, generation_config,  prompt, text_input, gender,cache_key, request_exception_handle)
         
         return (generated_content,)
+
+    def do_request(self, model, generation_config, prompt, text_input, gender, cache_key, request_exception_handle="bypass"):
+        try:           
+            content_parts = self.prepare_content(prompt, text_input, gender)
+            response = model.generate_content(content_parts, generation_config=generation_config, request_options= RequestOptions(
+                timeout=8))
+            generated_content = response.text
+            
+            # 更新缓存
+            self.cache.put(cache_key, generated_content)
+            self.save_cache()
+            
+        except Exception as e:
+            logger.exception(e)
+            if request_exception_handle == "raise_exception":
+                raise e
+            elif request_exception_handle == "output_exception":
+                generated_content = f"Error: {str(e)}"
+            else:
+                generated_content = text_input
+        return generated_content
         
 NODE_CLASS_MAPPINGS = {
     "GeminiPromptEnhance": GeminiPromptEnhance,
@@ -209,3 +217,11 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GeminiPromptEnhance": "Gemini prompt enhance",
 }
+
+# add a test code here
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    enhance = GeminiPromptEnhance()
+    result = enhance.generate_content(enhance.default_prompt, "a photo of a beautiful girl")
+    print(result)
+    
