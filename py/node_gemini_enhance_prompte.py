@@ -114,6 +114,7 @@ class GeminiPromptEnhance:
                 "gender_prior": (["","M", "F"], {"default": ""}),
                 "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
+                "request_exception_handle": (["bypass","rais_exceptipn","output_exception"], {"default":"bypass"})            
             }
         }
 
@@ -132,7 +133,7 @@ class GeminiPromptEnhance:
         return [{"text": text_content}]
 
     def generate_content(self, prompt, text_input=None, api_key="", proxy="",
-                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True):
+                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass"):
         if not enabled:
             return (text_input,)
         
@@ -183,7 +184,7 @@ class GeminiPromptEnhance:
             try:           
                 content_parts = self.prepare_content(prompt, text_input, gender)
                 response = model.generate_content(content_parts, generation_config=generation_config, request_options= RequestOptions(
-                    timeout=20))
+                    timeout=8))
                 generated_content = response.text
                 
                 # 更新缓存
@@ -191,7 +192,12 @@ class GeminiPromptEnhance:
                 self.save_cache()
                 
             except Exception as e:
-                generated_content = f"Error: {str(e)}"
+                if request_exception_handle == "rais_exceptipn":
+                    raise e
+                elif request_exception_handle == "output_exception":
+                    generated_content = f"Error: {str(e)}"
+                else:
+                    generated_content = text_input
         
         return (generated_content,)
         
