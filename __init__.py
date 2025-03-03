@@ -27,7 +27,7 @@ def update_javascript():
 
     if not os.path.exists(extensions_folder):
         print("Creating frontend extension folder: " + extensions_folder)
-        os.mkdir(extensions_folder)
+        os.makedirs(extensions_folder)
 
     result = filecmp.dircmp(javascript_folder, extensions_folder)
 
