@@ -75,3 +75,8 @@ def draw_rect(image:Image, x:int, y:int, width:int, height:int, line_color:str, 
     draw = ImageDraw.Draw(image)
     draw.rectangle((x, y, x + width, y + height), fill=box_color, outline=line_color, width=line_width, )
     return image
+
+# Tensor to cv2
+def tensor2cv(image):
+    image_np = np.clip(255. * image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)      
+    return cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)

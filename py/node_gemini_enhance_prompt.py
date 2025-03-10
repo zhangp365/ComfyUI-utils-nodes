@@ -137,7 +137,9 @@ class GeminiPromptEnhance:
                         max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass"):
         if not enabled:
             return (text_input,)
-        
+        if prompt is None or prompt.strip() == "":
+            prompt = self.default_prompt
+            
         gender = gender_prior if gender_prior else gender_alternative
         # 生成缓存键
         cache_key = f"{text_input or ''}_{gender}"

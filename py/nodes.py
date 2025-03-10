@@ -22,7 +22,7 @@ import cv2
 from comfy_extras.nodes_upscale_model import ImageUpscaleWithModel
 from math import dist
 import folder_paths
-from .utils import tensor2np,np2tensor
+from .utils import tensor2cv
 import hashlib
 
 config_dir = os.path.join(folder_paths.base_path, "config")
@@ -581,7 +581,8 @@ class MaskFromFaceModel:
             }
         }
 
-    RETURN_TYPES = ("MASK",)
+    RETURN_TYPES = ("MASK","STRING")
+    RETURN_NAMES = ("mask","genders")
     FUNCTION = 'mask_get'
     CATEGORY = 'utils/mask'
 
@@ -601,7 +602,7 @@ class MaskFromFaceModel:
             raise Exception("both faceanalysis and face_model are none!")
         
         if face_model is None:
-            image_np = tensor2np(image)
+            image_np = tensor2cv(image)
             image_np = image_np[0] if isinstance(image_np, list) else image_np
             face_model = self.analyze_faces(faceanalysis, image_np)
 
@@ -619,8 +620,11 @@ class MaskFromFaceModel:
         if max_face_number !=-1 and len(face_model) > max_face_number:
             face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number) 
 
+        face_models = sorted(face_models, key=lambda x:x.bbox[0])
         result = np.zeros((h, w), dtype=np.uint8)
+        genders = []
         for face in face_models:
+            genders.append(face.sex)
             points = face.landmark_2d_106.astype(np.int32)  # Convert landmarks to integer format            
             if add_bbox_upper_points:
                   # 获取bbox的坐标
@@ -649,7 +653,7 @@ class MaskFromFaceModel:
 
         result = torch.unsqueeze(torch.tensor(np.clip(result/255, 0, 1)), 0)
 
-        return (result,)
+        return (result, ",".join(genders))
     
     def remove_unavaible_face_models(self, face_models, max_people_number):
         max_lengths = []
