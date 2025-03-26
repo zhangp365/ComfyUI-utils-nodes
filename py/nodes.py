@@ -884,27 +884,28 @@ class MaskAutoSelector:
         return (mask,)
 
 
-class IntAndIntAddOffsetLiteral:
-    RETURN_TYPES = ("INT", "INT",)
-    RETURN_NAMES = ("int", "int add offset")
-    FUNCTION = "get_int"
+class FloatMultipleAddLiteral:
+    RETURN_TYPES = ("FLOAT", "FLOAT", "INT")
+    RETURN_NAMES = ("x", "ax + b", "ax + b(int)")
+    FUNCTION = "get_float"
     CATEGORY = "utils/numbers"
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
-                "optional": {"offset": ("INT", {"default": 1, "step": 1}), }
+        return {"required": {"number": ("FLOAT", {"default": 0, "min": 0, "max": 1000000})},
+                "optional": {"a_aign": (["positive", "negative"], {"default": "positive"}),
+                             "a": ("FLOAT", {"default": 1.0, "step": 0.001}), "b": ("FLOAT", {"default": 1, "step": 0.001}),
+                             }
                 }
 
-    def get_int(self, number, offset):
-        if number == 0:
-            return (0, 0)
-        return (number, number + offset)
-
+    def get_float(self, number, a, b, a_aign):
+        if a_aign == "negative":
+            a = - a
+        return (number, a*number + b, int(a*number + b))
 
 class IntMultipleAddLiteral:
-    RETURN_TYPES = ("INT", "INT",)
-    RETURN_NAMES = ("x", "ax + b")
+    RETURN_TYPES = ("INT", "INT", "FLOAT")
+    RETURN_NAMES = ("x", "ax + b", "ax + b(float)")
     FUNCTION = "get_int"
     CATEGORY = "utils/numbers"
 
@@ -912,15 +913,14 @@ class IntMultipleAddLiteral:
     def INPUT_TYPES(cls):
         return {"required": {"number": ("INT", {"default": 0, "min": 0, "max": 1000000})},
                 "optional": {"a_aign": (["positive", "negative"], {"default": "positive"}),
-                             "a": ("FLOAT", {"default": 1.0, "step": 0.05}), "b": ("INT", {"default": 1, "step": 1}),
+                             "a": ("FLOAT", {"default": 1.0, "step": 0.001}), "b": ("INT", {"default": 1, "step": 1}),
                              }
                 }
 
     def get_int(self, number, a, b, a_aign):
         if a_aign == "negative":
             a = - a
-        return (number, int(a*number + b))
-
+        return (number, int(a*number + b), a*number + b)
 
 MAX_RESOLUTION = 16384
 
@@ -1430,7 +1430,7 @@ NODE_CLASS_MAPPINGS = {
 
     # numbers
     "MatchImageRatioToPreset": MatchImageRatioToPreset,
-    "IntAndIntAddOffsetLiteral": IntAndIntAddOffsetLiteral,
+    "FloatMultipleAddLiteral": FloatMultipleAddLiteral,
     "IntMultipleAddLiteral": IntMultipleAddLiteral,
     
     # mask
@@ -1470,7 +1470,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
     # Number
     "MatchImageRatioToPreset": "Match Image Ratio to Standard Size",
-    "IntAndIntAddOffsetLiteral": "Int And Int Add Offset Literal",
+    "FloatMultipleAddLiteral": "Float Multiple and Add Literal",
     "IntMultipleAddLiteral": "Int Multiple and Add Literal",
 
     # Mask
