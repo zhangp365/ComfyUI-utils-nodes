@@ -102,7 +102,10 @@ Enhanced the official UpscaleImageWithModel node by adding a judge. If the input
 This node is designed to composite a watermark into the destination image. It can select the position of the watermark, resize the watermark according to the input ratio, and add a margin to the watermark.
 
 ## ImageTransition
-This node is designed to generate a transition image between two images. It can generate a transition image between two images.
+This node is designed to generate a transition image between two images. The first image gradually fades out while the second image simultaneously appears, creating a smooth transition effect.
+
+## ImageTransitionLeftToRight
+This node is designed to generate a transition image between two images. The first image gradually slides to the right while the second image simultaneously appears from the left, creating a smooth transition effect.
 
 ## TorchCompileModelAdvanced
 This node enables model compilation using torch.compile. It extends ComfyUI's original torch compile node by adding compile mode options and a toggle switch.
