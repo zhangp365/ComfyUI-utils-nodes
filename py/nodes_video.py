@@ -75,7 +75,7 @@ class ImageTransitionLeftToRight:
     CATEGORY = "utils"
 
     def create_transition(self, before_image: torch.Tensor, after_image: torch.Tensor, duration: float, fps: float):
-        print(f"before_image: {before_image.shape}, after_image: {after_image.shape}")
+
         # 确保输入是单张图片，如果是批次则取第一张
         if len(before_image.shape) == 4 and before_image.shape[0] > 1:
             before_image = before_image[0:1]
@@ -120,32 +120,52 @@ class ImageTransitionLeftToRight:
         return (result, duration, fps)
 
     def check_and_resizee_size(self, before_image, after_image):
-                # 获取目标尺寸（前图的尺寸）
-        target_height, target_width = before_image.shape[1:3]
+        # 获取目标尺寸（前图的尺寸）
+        before_height, before_width = before_image.shape[1:3]
         
         # 获取后图的原始尺寸
         after_height, after_width = after_image.shape[1:3]
-        adjusted_after = after_image
-        if target_height != after_height or target_width != after_width:
-            # 保持比例调整后图尺寸
-            # 先计算缩放比例
-            scale = min(target_height / after_height, target_width / after_width)
-            new_height = int(after_height * scale)
-            new_width = int(after_width * scale)
+        
+        # 如果尺寸相同，直接返回
+        if before_height == after_height and before_width == after_width:
+            return after_image
+
+
+        # 计算宽高比
+        before_ratio = before_width / before_height
+        after_ratio = after_width / after_height
+        
+           
+        logger.debug(f"before_image: {before_image.shape}, after_image: {after_image.shape}")
+        
+        # 调整后图尺寸，填充满目标尺寸（可能需要裁剪）
+        if after_ratio > before_ratio:
+            # 后图更宽，需要裁剪宽度
+            new_width = int(after_height * before_ratio)           
             
-            # 缩放后图
-            resized_after = torch.nn.functional.interpolate(
-                after_image.movedim(-1, 1), size=(new_height, new_width), mode='bicubic', align_corners=False
-            ).movedim(1, -1).clamp(0.0, 1.0)
-            # 创建空白画布（与前图尺寸相同）
-            adjusted_after = torch.zeros_like(before_image)
+            # 计算裁剪的起始位置（居中裁剪）
+            start_x = (after_width - new_width) // 2
+            logger.debug(f"start_x: {start_x}, new_width: {new_width}")
+            # 裁剪后图
+            cropped_after = after_image[:, :, start_x:start_x+new_width, :]
+        else:
+            # 后图更高，需要裁剪高度
+            new_height = int(after_width / before_ratio)
             
-            # 计算居中位置
-            y_offset = (target_height - new_height) // 2
-            x_offset = (target_width - new_width) // 2
-            
-            # 将缩放后的图像放置在画布中央
-            adjusted_after[:,:,:,:] = resized_after[0, y_offset:y_offset+new_height, x_offset:x_offset+new_width,:] 
+            # 计算裁剪的起始位置（居中裁剪）
+            start_y = (after_height - new_height) // 2
+            logger.debug(f"start_y: {start_y}, new_height: {new_height}")
+            # 裁剪后图
+            cropped_after = after_image[:, start_y:start_y+new_height, :, :]
+        logger.debug(f"cropped_after: {cropped_after.shape}")
+        # 缩放到目标尺寸
+        adjusted_after = torch.nn.functional.interpolate(
+            cropped_after.movedim(-1, 1), 
+            size=(before_height, before_width), 
+            mode='bicubic', 
+            align_corners=False
+        ).movedim(1, -1).clamp(0.0, 1.0)
+        
         return adjusted_after
 
 NODE_CLASS_MAPPINGS = {
