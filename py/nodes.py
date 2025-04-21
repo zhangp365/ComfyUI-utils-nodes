@@ -210,16 +210,21 @@ class ConcatTextOfUtils:
             "text1": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
             "text2": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
             "separator": ("STRING", {"multiline": False, "default": ","}),
-        }}
+            },
+        "optional": {
+           "text3": ("STRING", {"multiline": True, "defaultBehavior": "input"}),
+            }
+        }
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "fun"
     CATEGORY = "utils/text"
 
     @ staticmethod
-    def fun(text1, separator, text2):
-        return (text1 + separator + text2,)
-
+    def fun(text1, separator, text2, text3=""):
+        texts = [text1, text2, text3]
+        texts = [text.strip() for text in texts if text.strip()]
+        return (separator.join(texts),)
 
 class GenderWordsConfig:
     file_path = os.path.join(config_dir, "gender_words_config.yaml")
