@@ -622,6 +622,11 @@ class MaskFromFaceModel:
         if len(face_models) == 0:
             return (cant_detect_result,)
         
+        # 过滤低置信度的face
+        det_scores = [f.det_score for f in face_models]
+        if len(face_models) > 1 and max(det_scores) > 0.7:
+            face_models = [f for f in face_models if f.det_score > 0.7]
+
         if max_face_number !=-1 and len(face_model) > max_face_number:
             face_models = self.remove_unavaible_face_models(face_models=face_models,max_people_number=max_face_number) 
 
