@@ -107,6 +107,9 @@ This node is designed to generate a transition image between two images. The fir
 ## ImageTransitionLeftToRight
 This node is designed to generate a transition image between two images. The first image gradually slides to the right while the second image simultaneously appears from the left, creating a smooth transition effect.
 
+## ImageMaskColorAverage
+This node is designed to calculate the average color of the image within the mask. It returns the decimal and hexadecimal values of the average color.
+
 ## TorchCompileModelAdvanced
 This node enables model compilation using torch.compile. It extends ComfyUI's original torch compile node by adding compile mode options and a toggle switch.
 

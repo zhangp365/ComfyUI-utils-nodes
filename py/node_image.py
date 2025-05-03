@@ -101,16 +101,67 @@ class ImageTransition:
         result = torch.cat(output_frames, dim=0)
         
         return (result,)
-    
-NODE_CLASS_MAPPINGS = {
 
+class ImageMaskColorAverage:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+            }
+        }
+    
+    RETURN_TYPES = ("INT", "STRING")
+    RETURN_NAMES = ("COLOR_DEC", "COLOR_HEX")
+    FUNCTION = "calculate_average_color"
+    CATEGORY = "utils/image"
+
+    def calculate_average_color(self, image, mask):
+        # 确保mask是二维的
+        if len(mask.shape) > 2:
+            mask = mask.squeeze()
+        
+        # 将mask扩展为与图像相同的通道数
+        expanded_mask = mask.unsqueeze(-1).expand(-1, -1, 3)
+        
+        # 计算mask区域的像素总数
+        pixel_count = torch.sum(mask)
+        
+        if pixel_count == 0:
+            # 如果mask中没有选中区域，返回黑色
+            return (0, "#000000")
+        
+        # 计算mask区域的颜色总和
+        masked_image = image * expanded_mask.unsqueeze(0)
+        color_sum = torch.sum(masked_image, dim=[0, 1, 2])
+        
+        # 计算平均颜色
+        avg_color = color_sum / pixel_count
+        
+        # 转换为0-255范围的整数
+        r = int(avg_color[0].item() * 255)
+        g = int(avg_color[1].item() * 255)
+        b = int(avg_color[2].item() * 255)
+        
+        # 生成十六进制颜色代码
+        hex_color = f"#{r:02x}{g:02x}{b:02x}"
+        
+        # 计算十进制颜色值 (R*65536 + G*256 + B)
+        dec_color = r * 65536 + g * 256 + b
+        
+        return (dec_color, hex_color)
+
+NODE_CLASS_MAPPINGS = {
     #image
     "ImageCompositeWatermark": ImageCompositeWatermark,
     "ImageTransition": ImageTransition,
+    "ImageMaskColorAverage": ImageMaskColorAverage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     # Image
     "ImageCompositeWatermark": "Image Composite Watermark",
     "ImageTransition": "Image Transition",
+    "ImageMaskColorAverage": "Image Mask Color Average",
 }
