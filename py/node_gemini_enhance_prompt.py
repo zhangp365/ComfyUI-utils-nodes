@@ -125,11 +125,12 @@ class GeminiPromptEnhance:
     CATEGORY = "utils/text"
 
     def prepare_content(self, prompt, text_input, gender=""):
-        if gender == "M":
-            prompt = "edit and enhance the text content according to male gender. if there is a female, must change the text to describe as male.\n" + prompt
-        elif gender == "F":
-            prompt = "edit and enhance the text content according to female gender. if there is a male, must change the text to describe as female.\n" + prompt
-            
+        gender_word = "male" if gender == "M" else "female" if gender == "F" else gender
+        if gender_word:
+            prompt = f"edit and enhance the text content according to {gender_word}. if there is a difference, must change the text to describe as {gender_word}.\n" + prompt
+        else:
+            prompt = prompt
+
         text_content = prompt if not text_input else f"{prompt}\n{text_input}"
         return [{"text": text_content}]
 
@@ -224,6 +225,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     enhance = GeminiPromptEnhance()
-    result = enhance.generate_content(enhance.default_prompt, "a photo of a beautiful girl")
+    result = enhance.generate_content(enhance.default_prompt, "a photo of a beautiful girl ",gender_alternative= "M")
     print(result)
     
