@@ -116,7 +116,7 @@ class GeminiPromptEnhance:
                 "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
                 "request_exception_handle": (["bypass","raise_exception","output_exception"], {"default":"bypass"}),
-                "model": (["gemini-2.0-flash-exp", "gemini-2.0-flash"], {"default": "gemini-2.0-flash-exp"})            
+                "model": (["gemini-2.0-flash-exp", "gemini-2.0-flash"], {"default": "gemini-2.0-flash"})            
             }
         }
 
@@ -136,7 +136,7 @@ class GeminiPromptEnhance:
         return [{"text": text_content}]
 
     def generate_content(self, prompt, text_input=None, api_key="", proxy="",
-                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass", model="gemini-2.0-flash-exp"):
+                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass", model="gemini-2.0-flash"):
         if not enabled:
             return (text_input,)
         if prompt is None or prompt.strip() == "":
@@ -190,7 +190,7 @@ class GeminiPromptEnhance:
                 generated_content = self.do_request(model, generation_config, prompt, text_input, gender,cache_key, request_exception_handle)
         else:
             generated_content = self.do_request(model, generation_config,  prompt, text_input, gender,cache_key, request_exception_handle)
-        
+        logger.debug(f"gender_alternative: {gender_alternative}, text_input: {text_input}, gender: {gender}, generated_content: {generated_content}")
         return (generated_content,)
 
     def do_request(self, model, generation_config, prompt, text_input, gender, cache_key, request_exception_handle="bypass"):
