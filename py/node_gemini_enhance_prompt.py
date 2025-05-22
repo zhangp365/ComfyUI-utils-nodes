@@ -115,7 +115,8 @@ class GeminiPromptEnhance:
                 "gender_prior": (["","M", "F"], {"default": ""}),
                 "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
-                "request_exception_handle": (["bypass","raise_exception","output_exception"], {"default":"bypass"})            
+                "request_exception_handle": (["bypass","raise_exception","output_exception"], {"default":"bypass"}),
+                "model": (["gemini-2.0-flash-exp", "gemini-2.0-flash"], {"default": "gemini-2.0-flash-exp"})            
             }
         }
 
@@ -135,7 +136,7 @@ class GeminiPromptEnhance:
         return [{"text": text_content}]
 
     def generate_content(self, prompt, text_input=None, api_key="", proxy="",
-                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass"):
+                        max_output_tokens=8192, temperature=0.4, gender_prior="",gender_alternative="", enabled=True, request_exception_handle="bypass", model="gemini-2.0-flash-exp"):
         if not enabled:
             return (text_input,)
         if prompt is None or prompt.strip() == "":
@@ -173,7 +174,7 @@ class GeminiPromptEnhance:
         if not self.api_key:
             raise ValueError("API key not found in gemini_config.yml or node input")
 
-        model_name = 'models/gemini-2.0-flash-exp'
+        model_name = f'models/{model}'
         model = genai.GenerativeModel(model_name)
 
         # Apply fixed safety settings to the model
@@ -224,7 +225,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 # add a test code here
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger.info("start test")
     enhance = GeminiPromptEnhance()
     result = enhance.generate_content(enhance.default_prompt, "a photo of a beautiful girl ",gender_alternative= "M")
-    print(result)
+    logger.info(result)
     
