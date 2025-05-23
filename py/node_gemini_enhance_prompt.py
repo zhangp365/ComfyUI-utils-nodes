@@ -200,6 +200,8 @@ class GeminiPromptEnhance:
                 timeout=8))
             generated_content = response.text
             
+            if generated_content.startswith("I'm sorry"):
+                raise Exception(f"Gemini returned an rejection: {generated_content}")
             # 更新缓存
             self.cache.put(cache_key, generated_content)
             self.save_cache()
