@@ -74,7 +74,7 @@ class GeminiPromptEnhance:
         self.cache_size = 500  # 缓存最大条数
         self.cache_file = os.path.join(config_dir, 'prompt_cache_gemini.yml')
         self.cache = LRUCache(self.cache_size)
-        self.load_cache()
+        self.last_prompt = ""
         if self.api_key is not None:
             self.configure_genai()
 
@@ -141,7 +141,12 @@ class GeminiPromptEnhance:
             return (text_input,)
         if prompt is None or prompt.strip() == "":
             prompt = self.default_prompt
-            
+
+        if prompt != self.last_prompt:
+            self.last_prompt = prompt
+            self.cache.clear()
+            logger.info(f"clear cache for new prompt: {prompt}")
+
         gender = gender_prior if gender_prior else gender_alternative
         # 生成缓存键
         cache_key = f"{text_input or ''}_{gender}"
