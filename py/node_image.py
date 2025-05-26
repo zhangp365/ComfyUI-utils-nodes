@@ -152,11 +152,83 @@ class ImageMaskColorAverage:
         
         return (dec_color, hex_color)
 
+
+class ImagesConcanateToGrid:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "image1": ("IMAGE",),
+            "direction": (
+                ['right',
+                 'down',
+                 ],
+                {
+                    "default": 'right'
+                }),
+            "dimension_number": ("INT", {"default": 2, "min": 1, "max": 20, "step": 1}),
+        }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "concanate"
+    CATEGORY = "utils/image"
+
+    def concanate(self, image1, direction='right', dimension_number=2):
+        # 检查图像维度，如果不是4维直接返回
+        if len(image1.shape) != 4:
+            return (image1,)
+        
+        batch_size = image1.shape[0]
+        
+        # 如果批次大小为1，直接返回
+        if batch_size == 1:
+            return (image1,)
+        
+        # 将批次图像分离为单独的图像列表
+        images = [image1[i:i+1] for i in range(batch_size)]
+        
+        # 根据方向计算行数和列数
+        if direction == 'right':
+            cols = dimension_number
+            rows = (batch_size + cols - 1) // cols  # 向上取整
+        else:  # direction == 'down'
+            rows = dimension_number
+            cols = (batch_size + rows - 1) // rows  # 向上取整
+        
+        # 创建网格来存放图像
+        grid_rows = []
+        
+        for row in range(rows):
+            row_images = []
+            for col in range(cols):
+                idx = row * cols + col if direction == 'right' else col * rows + row
+                if idx < len(images):
+                    row_images.append(images[idx])
+                else:
+                    # 如果没有足够的图像，用黑色图像填充
+                    black_image = torch.zeros_like(images[0])
+                    row_images.append(black_image)
+            
+            # 水平拼接当前行的图像
+            if row_images:
+                row_concat = torch.cat(row_images, dim=2)  # 在宽度维度拼接
+                grid_rows.append(row_concat)
+        
+        # 垂直拼接所有行
+        if grid_rows:
+            result = torch.cat(grid_rows, dim=1)  # 在高度维度拼接
+        else:
+            result = image1
+        
+        return (result,)
+    
+
 NODE_CLASS_MAPPINGS = {
     #image
     "ImageCompositeWatermark": ImageCompositeWatermark,
     "ImageTransition": ImageTransition,
     "ImageMaskColorAverage": ImageMaskColorAverage,
+    "ImagesConcanateToGrid": ImagesConcanateToGrid,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -164,4 +236,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageCompositeWatermark": "Image Composite Watermark",
     "ImageTransition": "Image Transition",
     "ImageMaskColorAverage": "Image Mask Color Average",
+    "ImagesConcanateToGrid": "Images Concanate To Grid",
 }
