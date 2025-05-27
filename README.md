@@ -36,6 +36,9 @@ Special thanks to @kijai for their contribution to the initial version.
 ## ColorCorrectOfUtils
 This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](https://github.com/EllangoK/ComfyUI-post-processing-nodes/blob/master/post_processing/color_correct.py) node developed by @EllangoK. Added the chanels of red, green, and blue adjustment functionalities.
 
+## ImagesConcanateToGrid
+This node is designed to concatenate the input one batch images to a grid. It can concatenate images in the horizontal or vertical direction.
+
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
@@ -76,6 +79,10 @@ Generates a mask by covering the selected corners with circular edges. This mask
 
 ## MaskofCenter
 Generates a mask by covering the center of the image with a circular edge. This mask can be used as an attention mask, then model can focus on the center of the image.
+
+## MaskAreaComparison
+This node compares the area of the mask with the threshold. If the area is greater than the threshold, it will return True; otherwise, it will return False.
+
 
 ## CheckpointLoaderSimpleWithSwitch
 Enhanced the official LoadCheckpoint node by integrating three switches. Each switch controls whether a specific component is loaded. When a switch is turned off, the corresponding component will not be loaded. if you use the extra vae and close the model's vae loading, that will save memory.
