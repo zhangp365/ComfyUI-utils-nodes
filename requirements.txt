@@ -11,3 +11,6 @@ tf-keras==2.17.0
 
 # Gemini_prompt_enhance nod
 google-generativeai>0.4.1
+
+# volcano outpainting node
+volcengine
