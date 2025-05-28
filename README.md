@@ -39,6 +39,16 @@ This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](h
 ## ImagesConcanateToGrid
 This node is designed to concatenate the input one batch images to a grid. It can concatenate images in the horizontal or vertical direction.
 
+## VolcanoOutpainting
+This node is designed to outpaint the input image using the Volcano engine. 
+
+use this node, must get your free API key from Volcano engine:
+   - Visit [Volcano engine](https://console.volcengine.com/)
+   - Log in with your Volcano engine account
+   - Click on "访问控制" or go to [settings](https://console.volcengine.com/iam/keymanage)
+   - Create a new API key
+   - Copy the API key for use in the node's input
+
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
