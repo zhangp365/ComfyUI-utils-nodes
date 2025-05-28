@@ -1091,6 +1091,8 @@ class ImageResizeTo8x:
             mask = torch.zeros(1, height, width, dtype=torch.float32)
         else:
             mask = mask_optional
+            if len(mask.shape) == 2:
+                mask = mask.unsqueeze(0)
             if mask.shape[1] != height or mask.shape[2] != width:
                 mask = torch.nn.functional.interpolate(mask.unsqueeze(0), size=(
                     height, width), mode="bicubic").squeeze(0).clamp(0.0, 1.0)
