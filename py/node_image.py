@@ -221,7 +221,19 @@ class ImagesConcanateToGrid:
             result = image1
         
         return (result,)
+
+class NeedImageSizeAndCount:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"image": ("IMAGE",)}}
     
+    RETURN_TYPES = ("INT", "INT", "INT")
+    RETURN_NAMES = ("width", "height", "count")
+    FUNCTION = "get_image_size_and_count"
+    CATEGORY = "utils/image"
+
+    def get_image_size_and_count(self, image):
+        return (image.shape[2], image.shape[1], image.shape[0])
 
 NODE_CLASS_MAPPINGS = {
     #image
@@ -229,6 +241,7 @@ NODE_CLASS_MAPPINGS = {
     "ImageTransition": ImageTransition,
     "ImageMaskColorAverage": ImageMaskColorAverage,
     "ImagesConcanateToGrid": ImagesConcanateToGrid,
+    "NeedImageSizeAndCount": NeedImageSizeAndCount,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -237,4 +250,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageTransition": "Image Transition",
     "ImageMaskColorAverage": "Image Mask Color Average",
     "ImagesConcanateToGrid": "Images Concanate To Grid",
+    "NeedImageSizeAndCount": "get Image Size And Count by utils",
 }

@@ -74,15 +74,16 @@ class LoadImageWithoutListDir(LoadImage):
 
     CATEGORY = "utils/image"
 
-    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN", "STRING")
-    RETURN_NAMES = ("image", "mask", "enabled", "filename")
+    RETURN_TYPES = ("IMAGE", "MASK", "BOOLEAN", "STRING", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "enabled", "filename", "width", "height")
     FUNCTION = "load_image_with_switch"
 
     def load_image_with_switch(self, image, enabled=True):
         logger.debug("start load image")
         if not enabled:
-            return None, None, enabled
-        return self.load_image(image) + (enabled, ) + (image,)
+            return None, None, enabled, "", 0, 0
+        output_image, output_mask = self.load_image(image)
+        return (output_image, output_mask, enabled, image, output_image.shape[2], output_image.shape[1])
 
     
     @classmethod
