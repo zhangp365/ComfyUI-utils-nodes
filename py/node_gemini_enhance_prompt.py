@@ -65,7 +65,7 @@ class LRUCache(OrderedDict):
             self.popitem(last=False)
 
 class GeminiPromptEnhance:
-    default_prompt = "Edit and enhance the text description of the image. \nAdd quality descriptors, like 'A high-quality photo, an 8K photo.' \nAdd lighting descriptions based on the scene, like 'The lighting is natural and bright, casting soft shadows.' \nAdd scene descriptions according to the context, like 'The overall mood is serene and peaceful.' \nIf a person is in the scene, include a description of the skin, such as 'natural skin tones and ensure the skin appears realistic with clear, fine details.' \n\nOnly output the result of the text, no others.\nthe text is:"
+    default_prompt = "### Instruction: 1.Edit and enhance the text description of the image. \nAdd quality descriptors, like 'A high-quality photo, an 8K photo.' \n2.Add lighting descriptions based on the scene, like 'The lighting is natural and bright, casting soft shadows.' \n3.Add scene descriptions according to the context, like 'The overall mood is serene and peaceful.' \n4.If a person is in the scene, include a description of the skin, such as 'natural skin tones and ensure the skin appears realistic with clear, fine details.' \n\n5.Only output the result of the text, no others.\n### Text:"
 
     def __init__(self, api_key=None, proxy=None):
         config = get_config()
@@ -127,12 +127,15 @@ class GeminiPromptEnhance:
 
     def prepare_content(self, prompt, text_input, gender=""):
         gender_word = "male" if gender == "M" else "female" if gender == "F" else gender
+        if "### Instruction" not in prompt:
+            prompt = f"### Instruction:" + "\n".join([f"{i+1}.{line}" for i, line in enumerate(prompt.split("\n")) if line.strip()])
         if gender_word:
-            prompt = f"edit and enhance the text content according to {gender_word}. if there is a difference, must change the text to describe as {gender_word}.\n" + prompt
-        else:
-            prompt = prompt
-
-        text_content = prompt if not text_input else f"{prompt}\n{text_input}"
+            gender_instruction = f"### Instruction:\n0. edit and enhance the text content according to ({gender_word}). if there is a difference, must edit the difference of the text to describe as ({gender_word}).\n"
+            prompt = prompt.replace("### Instruction:", gender_instruction)
+        if "### Text:" not in prompt:
+            prompt = prompt + "\n### Text:"
+        text_content = prompt if not text_input else f"{prompt} \n{text_input}"
+        logger.debug(f"text_content: {text_content}")
         return [{"text": text_content}]
 
     def generate_content(self, prompt, text_input=None, api_key="", proxy="",
