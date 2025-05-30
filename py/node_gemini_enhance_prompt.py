@@ -198,7 +198,7 @@ class GeminiPromptEnhance:
                 generated_content = self.do_request(model, generation_config, prompt, text_input, gender,cache_key, request_exception_handle)
         else:
             generated_content = self.do_request(model, generation_config,  prompt, text_input, gender,cache_key, request_exception_handle)
-        logger.debug(f"gender_alternative: {gender_alternative}, text_input: {text_input}, gender: {gender}, generated_content: {generated_content}")
+        logger.debug(f"gender_alternative: {gender_alternative}, text_input: {text_input}, gender: {gender}, \ngenerated_content: {generated_content}")
         return (generated_content,)
 
     def do_request(self, model, generation_config, prompt, text_input, gender, cache_key, request_exception_handle="bypass"):
