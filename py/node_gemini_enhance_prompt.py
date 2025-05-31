@@ -130,7 +130,7 @@ class GeminiPromptEnhance:
         if "### Instruction" not in prompt:
             prompt = f"### Instruction:" + "\n".join([f"{i+1}.{line}" for i, line in enumerate(prompt.split("\n")) if line.strip()])
         if gender_word:
-            gender_instruction = f"### Instruction:\n0. edit and enhance the text content according to ({gender_word}). if there is a difference, must edit the difference of the text to describe as ({gender_word}).\n"
+            gender_instruction = f"### Instruction:\n0. Edit and enhance the text below,must replacing the main object's traits with those provided in ({gender_word}), and ensure they are well-integrated into the narrative. "
             prompt = prompt.replace("### Instruction:", gender_instruction)
         if "### Text:" not in prompt:
             prompt = prompt + "\n### Text:"
