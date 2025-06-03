@@ -66,19 +66,45 @@ class VolcanoBaseNode:
         # 设置凭证
         self.setup_credentials(access_key, secret_key)
         
-        # 发送请求
-        resp = self.visual_service.cv_process(form_data)
+        # 发送请求，如果失败则重试一次
+        max_retries = 2
+        last_exception = None
         
-        # 解码返回的图像
-        img_base64 = resp['data']['binary_data_base64'][0]
-        img_data = base64.b64decode(img_base64)
-        result_image = Image.open(io.BytesIO(img_data))
+        for attempt in range(max_retries):
+            try:                
+                resp = self.visual_service.cv_process(form_data)                
+                # 检查响应状态
+                if resp.get('code') == 50429:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"volcano api error, retry... ({attempt + 1}/{max_retries})")
+                        continue
+                    else:
+                        raise Exception(f"volcano api error, retry failed: {resp}")
+                
+                # 解码返回的图像
+                img_base64 = resp['data']['binary_data_base64'][0]
+                img_data = base64.b64decode(img_base64)
+                result_image = Image.open(io.BytesIO(img_data))
+                
+                # 删除图片base64，方便print
+                resp['data']['binary_data_base64'][0] = ""
+                logger.debug(f"volcano api response: {resp}")
+                
+                return result_image, resp
+                
+            except Exception as e:
+                last_exception = e
+                error_msg = str(e)
+                
+                # 检查是否超qps
+                if ('"code":50429' in error_msg):
+                    if attempt < max_retries - 1:
+                        logger.warning(f"volcano api error, retry... ({attempt + 1}/{max_retries}): {error_msg}")
+                        continue
+                               
+                raise e
         
-        # 删除图片base64，方便print
-        resp['data']['binary_data_base64'][0] = ""
-        logger.debug(f"volcano api response: {resp}")
-        
-        return result_image, resp
+        raise last_exception
 
 class VolcanoOutpaintingNode(VolcanoBaseNode):
     """火山引擎图像扩展节点"""
