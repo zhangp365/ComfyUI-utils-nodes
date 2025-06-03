@@ -61,10 +61,10 @@ class VolcanoBaseNode:
         self.visual_service.set_sk(sk)
         return ak, sk
     
-    def request_volcano_api(self, ak, sk, form_data):
+    def request_volcano_api(self, access_key, secret_key, form_data):
         """通用的火山引擎API请求方法"""
         # 设置凭证
-        self.setup_credentials(ak, sk)
+        self.setup_credentials(access_key, secret_key)
         
         # 发送请求
         resp = self.visual_service.cv_process(form_data)
@@ -89,8 +89,8 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
             "required": {
                 "image": ("IMAGE",),
                 "mask": ("MASK",),
-                "ak": ("STRING", {"default": ""}),
-                "sk": ("STRING", {"default": ""}),
+                "access_key": ("STRING", {"default": ""}),
+                "secret_key": ("STRING", {"default": ""}),
                 "seed": ("INT", {"default": 42, "min": 0, "max": 999999})
             }
         }
@@ -100,7 +100,7 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
     FUNCTION = "process_outpainting"
     CATEGORY = "image/volcano"
 
-    def process_outpainting(self, image, mask, ak, sk, seed):
+    def process_outpainting(self, image, mask, access_key, secret_key, seed):
         try:
             # 使用节点库的转换函数
             pil_image = tensor2pil(image)
@@ -126,7 +126,7 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
             }
             
             # 调用基类的通用API请求方法
-            result_image, _ = self.request_volcano_api(ak, sk, form_data)
+            result_image, _ = self.request_volcano_api(access_key, secret_key, form_data)
             
             # 使用节点库的转换函数转换结果为tensor
             result_tensor = pil2tensor(result_image)
@@ -147,8 +147,8 @@ class VolcanoImageEditNode(VolcanoBaseNode):
             "required": {
                 "image": ("IMAGE",),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
-                "ak": ("STRING", {"default": ""}),
-                "sk": ("STRING", {"default": ""}),
+                "access_key": ("STRING", {"default": ""}),
+                "secret_key": ("STRING", {"default": ""}),
                 "seed": ("INT", {"default": 42, "min": 0, "max": 0xffffffffffffffff}),
                 "scale": ("FLOAT", {"default": 0.5, "min": 0.1, "max": 1.0, "step": 0.01})
             },
@@ -161,7 +161,7 @@ class VolcanoImageEditNode(VolcanoBaseNode):
     FUNCTION = "process_image_edit"
     CATEGORY = "image/volcano"
 
-    def process_image_edit(self, image, prompt, ak, sk, seed, scale=0.5):
+    def process_image_edit(self, image, prompt, access_key, secret_key, seed, scale=0.5):
         try:
             # 使用节点库的转换函数
             pil_image = tensor2pil(image)
@@ -179,7 +179,7 @@ class VolcanoImageEditNode(VolcanoBaseNode):
             }
             
             # 调用基类的通用API请求方法
-            result_image, _ = self.request_volcano_api(ak, sk, form_data)
+            result_image, _ = self.request_volcano_api(access_key, secret_key, form_data)
             
             # 使用节点库的转换函数转换结果为tensor
             result_tensor = pil2tensor(result_image)
