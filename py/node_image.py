@@ -8,7 +8,7 @@ class ImageCompositeWatermark(ImageCompositeMasked):
             "required": {
                 "destination": ("IMAGE",),
                 "watermark": ("IMAGE",),
-                "position": (["bottom_right", "bottom_center", "bottom_left"], {"default": "bottom_right"}),
+                "position": (["top_right", "top_center", "top_left", "bottom_right", "bottom_center", "bottom_left"], {"default": "bottom_right"}),
                 "resize_ratio": ("FLOAT", {"default": 1, "min": 0, "max": 10, "step": 0.05}),
                 "margin": ("INT", {"default": 0, "min": 0, "max": 1000, "step": 1}),
             },
@@ -45,16 +45,19 @@ class ImageCompositeWatermark(ImageCompositeMasked):
                     0), scale_factor=resize_ratio * scale, mode="bicubic", antialias=True).squeeze(0).clamp(0.0, 1.0)
 
         water_h, water_w = watermark.shape[1:3]
-        # 计算y坐标 - 总是在底部
-        y = dest_h - water_h - margin
+        # 计算y坐标
+        if position.startswith("top"):
+            y = margin
+        else:  # bottom positions
+            y = dest_h - water_h - margin
         
         x = 0
         # 根据position计算x坐标
-        if position == "bottom_left":
+        if position.endswith("left"):
             x = margin
-        elif position == "bottom_center":
+        elif position.endswith("center"):
             x = (dest_w - water_w) // 2
-        elif position == "bottom_right":
+        elif position.endswith("right"):
             x = dest_w - water_w - margin
             
         if invert_mask and mask is not None:
