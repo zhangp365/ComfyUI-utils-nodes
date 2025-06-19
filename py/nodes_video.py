@@ -67,9 +67,11 @@ class ImageTransitionBase:
             "before_image": ("IMAGE",),
             "after_image": ("IMAGE",),
             "duration": ("FLOAT", {"default": 5.0, "min": 0.1, "max": 60.0, "step": 0.1}),
-            "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 120.0, "step": 1.0}),
-            "bounce_back": ("BOOLEAN", {"default": False}),
+            "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 120.0, "step": 1.0}),           
             },
+            "optional": {
+               "bounce_back": ("BOOLEAN", {"default": False}),
+            }
         }
     
     RETURN_TYPES = ("IMAGE", "FLOAT", "FLOAT")
