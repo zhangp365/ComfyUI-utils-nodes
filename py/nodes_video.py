@@ -16,44 +16,66 @@ class FrameAdjuster:
             "remove_frames": ("INT", {"default": 0, "min": 0, "max": 20, "step": 1}),
             },
             "optional": {
-                "extend_tail_frame_if_adjust":("BOOLEAN", {"default": False})
+                "extend_tail_frame_if_adjust":("BOOLEAN", {"default": False}),
+                "frame_count": ("INT", {"default": 0, "step": 1}),
+                "masks": ("MASK",)
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "INT", "FLOAT")
-    RETURN_NAMES = ("images", "frame_count", "fps")
+    RETURN_TYPES = ("IMAGE", "INT", "FLOAT", "MASK")
+    RETURN_NAMES = ("images", "frame_count", "fps", "masks")
     FUNCTION = "adjust_frames"
     CATEGORY = "utils"
 
-    def adjust_frames(self, images: torch.Tensor, duration: float, fps: float, remove_frames: int, extend_tail_frame_if_adjust: bool = False):
+    def adjust_frames(self, images: torch.Tensor, duration: float, fps: float, remove_frames: int, extend_tail_frame_if_adjust: bool = False, frame_count: int = 0, masks: torch.Tensor = None):
         if remove_frames > 0:
             images = images[:-remove_frames]
+            if masks is not None:
+                masks = masks[:-remove_frames]
+        
         batch_size = images.shape[0]
-        min_frames = int(fps * duration)
-        max_frames = int(fps * (duration + 1)) - 1
         
-        # 如果在目标范围内，直接返回
-        if min_frames <= batch_size <= max_frames:
-            return (images, len(images), fps)
+        # 如果指定了frame_count，则使用它；否则根据duration和fps计算
+        if frame_count > 0:
+            target_frames = frame_count
+        else:
+            min_frames = int(fps * duration)
+            max_frames = int(fps * (duration + 1)) - 1
+            
+            # 如果在目标范围内，直接返回
+            if min_frames <= batch_size <= max_frames:
+                return (images, len(images), fps)
+            
+            # 如果帧数过少，需要插值
+            if batch_size < min_frames:
+                target_frames = min_frames + 5 if not extend_tail_frame_if_adjust else min_frames
+            # 如果帧数过多，需要减帧
+            elif batch_size > max_frames:
+                target_frames = max_frames - 5
+            else:
+                target_frames = batch_size
         
-        # 如果帧数过少，需要插值
-        if batch_size < min_frames:
-            target_frames = min_frames + 5  if not extend_tail_frame_if_adjust else min_frames
-
-        # 如果帧数过多，需要减帧
-        if batch_size > max_frames:
-            target_frames = max_frames - 5
+        # 创建插值索引
         indices = np.linspace(0, batch_size - 1, target_frames)
         indices = np.floor(indices).astype(int)
+        
+        # 对images进行插值处理
         new_images = images[indices]
-
+        
+        # 如果提供了masks，也进行相同的插值处理
+        new_masks = None
+        if masks is not None:
+            new_masks = masks[indices]
 
         if extend_tail_frame_if_adjust:
             unique, counts = np.unique(indices, return_counts=True)
             repeat_count = np.min(counts[:-1]) if len(counts) > 1 else int(fps // 2)
             logger.info(f"repeat_count: {repeat_count}, unique: {unique}, counts: {counts}")
             new_images = torch.cat([new_images, images[-1].unsqueeze(0).repeat(repeat_count, 1, 1, 1)], dim=0)
-        return (new_images, len(new_images), fps)
+            if masks is not None:
+                new_masks = torch.cat([new_masks, masks[-1].unsqueeze(0).repeat(repeat_count, 1, 1)], dim=0)
+        
+        return (new_images, len(new_images), fps, new_masks)
 
 class ImageTransitionBase:
     """图像过渡效果的基类"""
