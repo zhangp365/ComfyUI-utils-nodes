@@ -44,7 +44,7 @@ class FrameAdjuster:
             
             # 如果在目标范围内，直接返回
             if min_frames <= batch_size <= max_frames:
-                return (images, len(images), fps)
+                return (images, len(images), fps, masks)
             
             # 如果帧数过少，需要插值
             if batch_size < min_frames:
