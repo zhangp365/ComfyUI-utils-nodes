@@ -116,7 +116,7 @@ class GeminiPromptEnhance:
                 "gender_alternative": ("STRING", {"forceInput": True}),
                 "enabled": ("BOOLEAN", {"default": True}),                
                 "request_exception_handle": (["bypass","raise_exception","output_exception"], {"default":"bypass"}),
-                "model": (["gemini-2.0-flash-exp", "gemini-2.0-flash"], {"default": "gemini-2.0-flash"})            
+                "model": (["gemini-2.5-flash-lite-preview-06-17", "gemini-2.0-flash"], {"default": "gemini-2.0-flash"})            
             }
         }
 
