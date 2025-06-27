@@ -93,6 +93,10 @@ class ImageTransitionBase:
             },
             "optional": {
                "bounce_back": ("BOOLEAN", {"default": False}),
+               "start_end_pause_percent": ("FLOAT", {"default": 0.09, "min": 0.0, "max": 0.5, "step": 0.01}),
+               "middle_pause_percent": ("FLOAT", {"default": 0.15, "min": 0.0, "max": 0.5, "step": 0.01}),
+               "start_end_position_percent": ("FLOAT", {"default": 0.06, "min": 0.0, "max": 0.5, "step": 0.01}),
+               "transition_line_width": ("INT", {"default": 8, "min": 1, "max": 20, "step": 1}),
             }
         }
     
@@ -101,7 +105,7 @@ class ImageTransitionBase:
     FUNCTION = "create_transition"
     CATEGORY = "utils"
 
-    def create_transition(self, before_image: torch.Tensor, after_image: torch.Tensor, duration: float, fps: float, bounce_back: bool = False):
+    def create_transition(self, before_image: torch.Tensor, after_image: torch.Tensor, duration: float, fps: float, bounce_back: bool = False, start_end_pause_percent: float = 0, middle_pause_percent: float = 0, start_end_position_percent: float = 0, transition_line_width: int = 1):
         # 确保输入是单张图片，如果是批次则取第一张
         if len(before_image.shape) == 4 and before_image.shape[0] > 1:
             before_image = before_image[0:1]
@@ -119,31 +123,68 @@ class ImageTransitionBase:
         
         if bounce_back:
             # 如果启用回弹效果，先从左到右，再从右到左
-            # 前半段：从左到右
-            half_frames = total_frames // 2
-            for i in range(half_frames):
-                progress = i / (half_frames - 1) if half_frames > 1 else 1.0
-                new_frame = self.create_transition_frame(before_image, adjusted_after, progress)
+            # 计算各阶段的帧数
+            start_pause_frames = int(total_frames * start_end_pause_percent)
+            middle_pause_frames = int(total_frames * middle_pause_percent)
+            transition_frames = (total_frames - 2 * start_pause_frames - middle_pause_frames) // 2
+            
+            # 第一阶段：起始停留（显示前图）
+            for i in range(start_pause_frames):
+                frames.append(before_image.clone())
+            
+            # 第二阶段：从左到右过渡
+            for i in range(transition_frames):
+                progress = i / (transition_frames - 1) if transition_frames > 1 else 1.0
+                # 调整进度以考虑起始和结束位置
+                adjusted_progress = start_end_position_percent + (1.0 - 2 * start_end_position_percent) * progress
+                new_frame = self.create_transition_frame(before_image, adjusted_after, adjusted_progress, transition_line_width)
                 frames.append(new_frame)
             
-            # 后半段：从右到左
-            for i in range(half_frames, total_frames):
-                progress = 1.0 - ((i - half_frames) / (total_frames - half_frames - 1) if total_frames - half_frames > 1 else 0.0)
-                new_frame = self.create_transition_frame(before_image, adjusted_after, progress)
+            # 第三阶段：中间停留（显示后图）
+            for i in range(middle_pause_frames):
+                frames.append(adjusted_after.clone())
+            
+            # 第四阶段：从右到左过渡
+            for i in range(transition_frames):
+                progress = i / (transition_frames - 1) if transition_frames > 1 else 1.0
+                # 调整进度以考虑起始和结束位置，反向
+                adjusted_progress = 1.0 - start_end_position_percent - (1.0 - 2 * start_end_position_percent) * progress
+                new_frame = self.create_transition_frame(before_image, adjusted_after, adjusted_progress, transition_line_width)
                 frames.append(new_frame)
+            
+            # 第五阶段：结束停留（显示前图）
+            remaining_frames = total_frames - len(frames)
+            for i in range(remaining_frames):
+                frames.append(before_image.clone())
         else:
             # 正常的单向过渡
-            for i in range(total_frames):
-                progress = i / (total_frames - 1) if total_frames > 1 else 1.0
-                new_frame = self.create_transition_frame(before_image, adjusted_after, progress)
+            # 计算各阶段的帧数
+            start_pause_frames = int(total_frames * start_end_pause_percent)
+            transition_frames = total_frames - 2 * start_pause_frames
+            
+            # 第一阶段：起始停留（显示前图）
+            for i in range(start_pause_frames):
+                frames.append(before_image.clone())
+            
+            # 第二阶段：过渡
+            for i in range(transition_frames):
+                progress = i / (transition_frames - 1) if transition_frames > 1 else 1.0
+                # 调整进度以考虑起始和结束位置
+                adjusted_progress = start_end_position_percent + (1.0 - 2 * start_end_position_percent) * progress
+                new_frame = self.create_transition_frame(before_image, adjusted_after, adjusted_progress, transition_line_width)
                 frames.append(new_frame)
+            
+            # 第三阶段：结束停留（显示后图）
+            remaining_frames = total_frames - len(frames)
+            for i in range(remaining_frames):
+                frames.append(adjusted_after.clone())
         
         # 合并所有帧
         result = torch.cat(frames, dim=0)
         
         return (result, duration, fps)
 
-    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float):
+    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float, line_width: int = 2):
         """创建过渡帧的抽象方法，子类需要实现"""
         raise NotImplementedError("子类必须实现create_transition_frame方法")
 
@@ -197,7 +238,7 @@ class ImageTransitionBase:
 class ImageTransitionLeftToRight(ImageTransitionBase):
     """从左到右的图像过渡效果"""
     
-    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float):
+    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float, line_width: int = 2):
         # 获取目标尺寸（前图的尺寸）
         _, target_width = before_image.shape[1:3]
         
@@ -215,12 +256,21 @@ class ImageTransitionLeftToRight(ImageTransitionBase):
         if transition_x > 0:
             new_frame[0, :, :transition_x, :] = after_image[0, :, :transition_x, :]
         
+        # 添加白色过渡线条
+        if line_width > 0 and transition_x > 0 and transition_x < target_width:
+            # 计算线条的起始和结束位置
+            line_start = max(0, transition_x - line_width // 2)
+            line_end = min(target_width, transition_x + line_width // 2)
+            
+            # 用白色填充线条区域
+            new_frame[0, :, line_start:line_end, :] = 1.0
+        
         return new_frame
 
 class ImageTransitionTopToBottom(ImageTransitionBase):
     """从上到下的图像过渡效果"""
     
-    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float):
+    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float, line_width: int = 2):
         # 获取目标尺寸（前图的尺寸）
         target_height, _ = before_image.shape[1:3]
         
@@ -238,16 +288,93 @@ class ImageTransitionTopToBottom(ImageTransitionBase):
         if transition_y > 0:
             new_frame[0, :transition_y, :, :] = after_image[0, :transition_y, :, :]
         
+        # 添加白色过渡线条
+        if line_width > 0 and transition_y > 0 and transition_y < target_height:
+            # 计算线条的起始和结束位置
+            line_start = max(0, transition_y - line_width // 2)
+            line_end = min(target_height, transition_y + line_width // 2)
+            
+            # 用白色填充线条区域
+            new_frame[0, line_start:line_end, :, :] = 1.0
+        
+        return new_frame
+
+class ImageTransitionBottomToTop(ImageTransitionBase):
+    """从底到顶的图像过渡效果"""
+    
+    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float, line_width: int = 2):
+        # 获取目标尺寸（前图的尺寸）
+        target_height, _ = before_image.shape[1:3]
+        
+        # 计算过渡线的y坐标（从底部开始）
+        transition_y = int(target_height * (1.0 - progress))
+        
+        # 创建新帧
+        new_frame = torch.zeros_like(before_image)
+        
+        # 从底到顶过渡：下方显示后图，上方显示前图
+        # 先填充整个前图
+        new_frame[0] = before_image[0]
+        
+        # 然后在下方填充后图（覆盖前图）
+        if transition_y < target_height:
+            new_frame[0, transition_y:, :, :] = after_image[0, transition_y:, :, :]
+        
+        # 添加白色过渡线条
+        if line_width > 0 and transition_y > 0 and transition_y < target_height:
+            # 计算线条的起始和结束位置
+            line_start = max(0, transition_y - line_width // 2)
+            line_end = min(target_height, transition_y + line_width // 2)
+            
+            # 用白色填充线条区域
+            new_frame[0, line_start:line_end, :, :] = 1.0
+        
+        return new_frame
+
+class ImageTransitionRightToLeft(ImageTransitionBase):
+    """从右到左的图像过渡效果"""
+    
+    def create_transition_frame(self, before_image: torch.Tensor, after_image: torch.Tensor, progress: float, line_width: int = 2):
+        # 获取目标尺寸（前图的尺寸）
+        _, target_width = before_image.shape[1:3]
+        
+        # 计算过渡线的x坐标（从右侧开始）
+        transition_x = int(target_width * (1.0 - progress))
+        
+        # 创建新帧
+        new_frame = torch.zeros_like(before_image)
+        
+        # 从右到左过渡：右侧显示后图，左侧显示前图
+        # 先填充整个前图
+        new_frame[0] = before_image[0]
+        
+        # 然后在右侧填充后图（覆盖前图）
+        if transition_x < target_width:
+            new_frame[0, :, transition_x:, :] = after_image[0, :, transition_x:, :]
+        
+        # 添加白色过渡线条
+        if line_width > 0 and transition_x > 0 and transition_x < target_width:
+            # 计算线条的起始和结束位置
+            line_start = max(0, transition_x - line_width // 2)
+            line_end = min(target_width, transition_x + line_width // 2)
+            
+            # 用白色填充线条区域
+            new_frame[0, :, line_start:line_end, :] = 1.0
+        
         return new_frame
 
 NODE_CLASS_MAPPINGS = {
     "FrameAdjuster": FrameAdjuster,
     "ImageTransitionLeftToRight": ImageTransitionLeftToRight,
-    "ImageTransitionTopToBottom": ImageTransitionTopToBottom
+    "ImageTransitionTopToBottom": ImageTransitionTopToBottom,
+    "ImageTransitionRightToLeft": ImageTransitionRightToLeft,
+    "ImageTransitionBottomToTop": ImageTransitionBottomToTop
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "FrameAdjuster": "Frame Adjuster",
     "ImageTransitionLeftToRight": "Image Transition Left to Right",
-    "ImageTransitionTopToBottom": "Image Transition Top to Bottom"
+    "ImageTransitionTopToBottom": "Image Transition Top to Bottom",
+    "ImageTransitionRightToLeft": "Image Transition Right to Left",
+    "ImageTransitionBottomToTop": "Image Transition Bottom to Top"
 }

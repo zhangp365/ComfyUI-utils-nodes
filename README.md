@@ -125,8 +125,14 @@ This node is designed to generate a transition image between two images. The fir
 ## ImageTransitionLeftToRight
 This node is designed to generate a transition image between two images. The first image gradually slides to the right while the second image simultaneously appears from the left, creating a smooth transition effect.
 
+## ImageTransitionRightToLeft
+This node is designed to generate a transition image between two images. The first image gradually slides to the left while the second image simultaneously appears from the right, creating a smooth transition effect.
+
 ## ImageTransitionTopToBottom
 This node is designed to generate a transition image between two images. The first image gradually slides down while the second image simultaneously appears from the top, creating a smooth vertical transition effect.
+
+## ImageTransitionBottomToTop
+This node is designed to generate a transition image between two images. The first image gradually slides up while the second image simultaneously appears from the bottom, creating a smooth vertical transition effect.
 
 ## ImageMaskColorAverage
 This node is designed to calculate the average color of the image within the mask. It returns the decimal and hexadecimal values of the average color.
