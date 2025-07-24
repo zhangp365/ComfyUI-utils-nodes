@@ -48,7 +48,7 @@ class ReplicateRequstNode:
         return {
             "required": {
                 "prompt": ("STRING", {"default": "style of 80s cyberpunk, a portrait photo", "multiline": True}),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 2147483647}),               
+                "seed": ("INT", {"default": 42, "min": 0}),               
                 "aspect_ratio": (["1:1", "16:9", "21:9", "3:2", "4:3", "5:4", "9:16", "9:21", "2:3", "3:4", "4:5"], {"default": "1:1"}),
                 "steps": ("INT", {"default": 28, "min": 1, "max": 100}),
                 "guidance": ("FLOAT", {"default": 3.5, "min": 0.1, "max": 100.0, "step": 0.1}),
