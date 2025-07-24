@@ -14,3 +14,6 @@ google-generativeai>0.4.1
 
 # volcano outpainting node
 volcengine
+
+# replicate node
+replicate>=0.22.0
