@@ -118,6 +118,9 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
                 "access_key": ("STRING", {"default": ""}),
                 "secret_key": ("STRING", {"default": ""}),
                 "seed": ("INT", {"default": 42, "min": 0, "max": 999999})
+            },
+            "optional": {
+                "version": ("STRING", {"default": "i2i_outpainting", "tooltip": "this value is the reqKey of the volcano api."}),
             }
         }
 
@@ -126,7 +129,7 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
     FUNCTION = "process_outpainting"
     CATEGORY = "image/volcano"
 
-    def process_outpainting(self, image, mask, access_key, secret_key, seed):
+    def process_outpainting(self, image, mask, access_key, secret_key, seed, version="i2i_outpainting"):
         try:
             # 使用节点库的转换函数
             pil_image = tensor2pil(image)
@@ -142,7 +145,7 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
             
             # 构建请求参数
             form_data = {
-                "req_key": "i2i_outpainting",
+                "req_key": version,
                 "binary_data_base64": [image_base64, mask_base64],
                 "top": 0,
                 "left": 0,
@@ -161,8 +164,7 @@ class VolcanoOutpaintingNode(VolcanoBaseNode):
                 
         except Exception as e:
             logger.exception(e)
-            # 返回原图作为fallback
-            return (image,)
+            raise e
 
 class VolcanoImageEditNode(VolcanoBaseNode):
     """火山引擎图像编辑节点"""
@@ -179,6 +181,7 @@ class VolcanoImageEditNode(VolcanoBaseNode):
                 "scale": ("FLOAT", {"default": 0.5, "min": 0.1, "max": 1.0, "step": 0.01})
             },
             "optional": {
+                "version": (["byteedit_v2.0","seededit_v3.0"], {"default": "seededit_v3.0"}),
             }
         }
 
@@ -187,7 +190,7 @@ class VolcanoImageEditNode(VolcanoBaseNode):
     FUNCTION = "process_image_edit"
     CATEGORY = "image/volcano"
 
-    def process_image_edit(self, image, prompt, access_key, secret_key, seed, scale=0.5):
+    def process_image_edit(self, image, prompt, access_key, secret_key, seed, scale=0.5, version="seededit_v3.0"):
         try:
             # 使用节点库的转换函数
             pil_image = tensor2pil(image)
@@ -197,7 +200,7 @@ class VolcanoImageEditNode(VolcanoBaseNode):
             binary_data = [image_base64]
             # 构建请求参数
             form_data = {
-                "req_key": "byteedit_v2.0",
+                "req_key": version,
                 "binary_data_base64": binary_data,
                 "prompt": prompt,
                 "seed": seed,
@@ -213,9 +216,8 @@ class VolcanoImageEditNode(VolcanoBaseNode):
             return (result_tensor,)
                 
         except Exception as e:
-            logger.exception(f"图像编辑处理失败: {e}")
-            # 返回原图作为fallback
-            return (image,)
+            logger.exception(e)
+            raise e
 
 # 节点映射
 NODE_CLASS_MAPPINGS = {
