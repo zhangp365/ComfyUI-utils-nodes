@@ -9,7 +9,8 @@ import numpy as np
 import requests
 from PIL import Image
 import io
-
+import tempfile
+import collections
 logger = logging.getLogger(__name__)
 
 config_dir = os.path.join(folder_paths.base_path, "config")
@@ -62,6 +63,7 @@ class ReplicateRequstNode:
                 "extra_lora_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1}),
                 "model": ("STRING", {"default": "black-forest-labs/flux-dev-lora"}),
                 "num_outputs": ("INT", {"default": 1, "min": 1, "max": 10}),
+                "image": ("IMAGE",),
             }
         }
 
@@ -72,7 +74,7 @@ class ReplicateRequstNode:
 
     def generate_image(self, prompt, seed, aspect_ratio, steps, guidance, go_fast, lora_path="", lora_scale=1.0, 
                       api_key="", extra_lora="", extra_lora_scale=1.0, model="black-forest-labs/flux-dev-lora", 
-                      num_outputs=1):
+                      num_outputs=1, image=None):
         # 更新API key
         if api_key.strip():
             self.api_key = api_key
@@ -102,31 +104,68 @@ class ReplicateRequstNode:
                 input_params["extra_lora"] = extra_lora
                 input_params["extra_lora_scale"] = extra_lora_scale
 
+            # 处理输入图像
+            if image is not None and len(image) > 0:
+                # 将tensor转换为PIL图像，然后保存为临时文件
+                from .utils import tensor2pil
+                pil_image = tensor2pil(image[0])  # 取第一张图片
+                
+                # 创建临时文件
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                    pil_image.save(temp_file.name, format='PNG')
+                    temp_file_path = temp_file.name
+                
+                # 使用open()创建文件对象
+                input_params["input_image"] = open(temp_file_path, "rb")
+                logger.debug(f"已添加输入图像文件: {temp_file_path}")
+
             logger.debug(f"调用Replicate API，参数: {input_params}")
 
             # 调用Replicate API
             output = replicate.run(model, input=input_params)
             
-            if not output or len(output) == 0:
-                raise Exception("Replicate API返回空结果")
-
+            # 清理临时文件
+            if image is not None and len(image) > 0:
+                try:
+                    input_params["input_image"].close()
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+            
             images = []
             urls = []
-            for image_url in output:
-                logger.debug(f"生成的图片URL: {image_url}")
-                urls.append(str(image_url))
-                # 下载图片
-                response = requests.get(image_url)
-                response.raise_for_status()
-                
-                # 转换为PIL图像
-                image = Image.open(io.BytesIO(response.content))
-                width, height = image.size
-
-                image_array = np.array(image)
-                if len(image_array.shape) == 3 and image_array.shape[2] == 4:  # RGBA
-                    image_array = image_array[:, :, :3]  # 转换为RGB
-                images.append(image_array)
+            if isinstance(output, collections.abc.Sequence) and all(isinstance(x, str) for x in output):
+                for image_url in output:
+                    logger.debug(f"生成的图片URL: {image_url}")
+                    urls.append(str(image_url))
+                    response = requests.get(image_url)
+                    response.raise_for_status()
+                    image = Image.open(io.BytesIO(response.content))
+                    width, height = image.size
+                    image_array = np.array(image)
+                    if len(image_array.shape) == 3 and image_array.shape[2] == 4:
+                        image_array = image_array[:, :, :3]
+                    images.append(image_array)
+            # 2. 如果是FileOutput或文件对象
+            elif hasattr(output, "read") or hasattr(output, "path"):
+                # 兼容单文件和多文件
+                file_outputs = output if isinstance(output, collections.abc.Sequence) else [output]
+                for file_obj in file_outputs:
+                    if hasattr(file_obj,"read"):
+                        img_bytes = file_obj.read()
+                    elif hasattr(file_obj, "path"):
+                        with open(file_obj.path, "rb") as f:
+                            img_bytes = f.read()
+                    else:
+                        raise Exception("未知的FileOutput类型")
+                    image = Image.open(io.BytesIO(img_bytes))
+                    width, height = image.size
+                    image_array = np.array(image)
+                    if len(image_array.shape) == 3 and image_array.shape[2] == 4:
+                        image_array = image_array[:, :, :3]
+                    images.append(image_array)
+            else:
+                raise Exception(f"未知的output类型: {type(output)}")
             
             from .utils import np2tensor
             image_tensor = np2tensor(images)
