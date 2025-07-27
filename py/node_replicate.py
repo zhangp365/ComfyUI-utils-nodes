@@ -131,41 +131,22 @@ class ReplicateRequstNode:
                     os.unlink(temp_file_path)
                 except:
                     pass
-            
+
             images = []
             urls = []
-            if isinstance(output, collections.abc.Sequence) and all(isinstance(x, str) for x in output):
-                for image_url in output:
-                    logger.debug(f"生成的图片URL: {image_url}")
-                    urls.append(str(image_url))
-                    response = requests.get(image_url)
-                    response.raise_for_status()
-                    image = Image.open(io.BytesIO(response.content))
-                    width, height = image.size
-                    image_array = np.array(image)
-                    if len(image_array.shape) == 3 and image_array.shape[2] == 4:
-                        image_array = image_array[:, :, :3]
-                    images.append(image_array)
-            # 2. 如果是FileOutput或文件对象
-            elif hasattr(output, "read") or hasattr(output, "path"):
-                # 兼容单文件和多文件
-                file_outputs = output if isinstance(output, collections.abc.Sequence) else [output]
-                for file_obj in file_outputs:
-                    if hasattr(file_obj,"read"):
-                        img_bytes = file_obj.read()
-                    elif hasattr(file_obj, "path"):
-                        with open(file_obj.path, "rb") as f:
-                            img_bytes = f.read()
-                    else:
-                        raise Exception("未知的FileOutput类型")
-                    image = Image.open(io.BytesIO(img_bytes))
-                    width, height = image.size
-                    image_array = np.array(image)
-                    if len(image_array.shape) == 3 and image_array.shape[2] == 4:
-                        image_array = image_array[:, :, :3]
-                    images.append(image_array)
-            else:
-                raise Exception(f"未知的output类型: {type(output)}")
+            if not isinstance(output, list):
+                output = [output]
+            for image_url in output:
+                logger.debug(f"生成的图片URL: {image_url}")
+                urls.append(str(image_url))
+                response = requests.get(image_url)
+                response.raise_for_status()
+                image = Image.open(io.BytesIO(response.content))
+                width, height = image.size
+                image_array = np.array(image)
+                if len(image_array.shape) == 3 and image_array.shape[2] == 4:
+                    image_array = image_array[:, :, :3]
+                images.append(image_array)
             
             from .utils import np2tensor
             image_tensor = np2tensor(images)
