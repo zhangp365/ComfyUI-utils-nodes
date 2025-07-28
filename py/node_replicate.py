@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(".")
-import replicate
+from replicate.client import Client
 import folder_paths
 import logging
 import yaml
@@ -39,6 +39,7 @@ class ReplicateRequstNode:
         self.api_key = api_key or config.get("REPLICATE_API_TOKEN")
         if self.api_key is not None:
             self.configure_replicate()
+        self.client = Client(timeout=60)
 
     def configure_replicate(self):
         if self.api_key:
@@ -122,7 +123,7 @@ class ReplicateRequstNode:
             logger.debug(f"调用Replicate API，参数: {input_params}")
 
             # 调用Replicate API
-            output = replicate.run(model, input=input_params)
+            output = self.client.run(model, input=input_params)
             
             # 清理临时文件
             if image is not None and len(image) > 0:
