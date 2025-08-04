@@ -1,16 +1,18 @@
+import time
+import comfy.model_management
+import tempfile
+import io
+from PIL import Image
+import requests
+import numpy as np
+import yaml
+import logging
+import folder_paths
+from replicate.client import Client
 import os
 import sys
 sys.path.append(".")
-from replicate.client import Client
-import folder_paths
-import logging
-import yaml
-import numpy as np
-import requests
-from PIL import Image
-import io
-import tempfile
-import collections
+
 logger = logging.getLogger(__name__)
 
 config_dir = os.path.join(folder_paths.base_path, "config")
@@ -21,16 +23,70 @@ if not os.path.exists(config_dir):
 def get_config():
     try:
         config_path = os.path.join(config_dir, 'replicate_config.yml')
-        with open(config_path, 'r') as f:  
+        with open(config_path, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
         return config
     except:
         return {}
 
+
 def save_config(config):
     config_path = os.path.join(config_dir, 'replicate_config.yml')
     with open(config_path, 'w') as f:
         yaml.dump(config, f, indent=4)
+
+
+class ComfyUIReplicateRun:
+    """结合ComfyUI中断机制的Replicate运行器"""
+
+    def __init__(self, timeout_seconds=300, check_interval=1.0):
+        self.timeout_seconds = timeout_seconds
+        self.check_interval = check_interval
+
+    def run_with_interrupt_check(self, client, ref, input=None, **params):
+        """带中断检查的replicate运行"""
+        start_time = time.time()
+
+        # 设置wait=False，手动控制轮询
+        params['wait'] = False
+
+        try:
+            # 创建预测
+            if hasattr(ref, 'id'):
+                prediction = client.predictions.create(
+                    version=ref.id, input=input or {}, **params
+                )
+            else:
+                prediction = client.models.predictions.create(
+                    model=ref, input=input or {}, **params
+                )
+
+            # 手动轮询，检查中断
+            while True:
+                # 检查超时
+                if time.time() - start_time > self.timeout_seconds:
+                    raise Exception(f"timeout ({self.timeout_seconds} seconds)")
+
+                # 检查ComfyUI中断信号
+                if comfy.model_management.processing_interrupted():
+                    raise comfy.model_management.InterruptProcessingException(
+                        "ComfyUI interrupted")
+
+                # 检查预测状态
+                prediction.reload()
+
+                if prediction.status == "succeeded":
+                    return prediction.output
+                elif prediction.status == "failed":
+                    raise Exception(f"prediction failed: {prediction.error}")
+                elif prediction.status in ["starting", "processing"]:
+                    time.sleep(self.check_interval)
+                else:
+                    raise Exception(f"unknown status: {prediction.status}")
+
+        except Exception as e:
+            logging.error(f"Replicate operation failed: {e}")
+            raise
 
 
 class ReplicateRequstNode:
@@ -50,11 +106,11 @@ class ReplicateRequstNode:
         return {
             "required": {
                 "prompt": ("STRING", {"default": "style of 80s cyberpunk, a portrait photo", "multiline": True}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),          
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "aspect_ratio": (["1:1", "16:9", "21:9", "3:2", "4:3", "5:4", "9:16", "9:21", "2:3", "3:4", "4:5"], {"default": "1:1"}),
                 "steps": ("INT", {"default": 28, "min": 1, "max": 100}),
                 "guidance": ("FLOAT", {"default": 3.5, "min": 0.1, "max": 100.0, "step": 0.1}),
-                "go_fast": ("BOOLEAN", {"default": True}),               
+                "go_fast": ("BOOLEAN", {"default": True}),
             },
             "optional": {
                 "api_key": ("STRING", {"default": ""}),
@@ -65,6 +121,7 @@ class ReplicateRequstNode:
                 "model": ("STRING", {"default": "black-forest-labs/flux-dev-lora"}),
                 "num_outputs": ("INT", {"default": 1, "min": 1, "max": 10}),
                 "image": ("IMAGE",),
+                "timeout": ("INT", {"default": 60, "min": 1, "max": 3000}),
             }
         }
 
@@ -73,9 +130,9 @@ class ReplicateRequstNode:
     FUNCTION = "generate_image"
     CATEGORY = "utils/image"
 
-    def generate_image(self, prompt, seed, aspect_ratio, steps, guidance, go_fast, lora_path="", lora_scale=1.0, 
-                      api_key="", extra_lora="", extra_lora_scale=1.0, model="black-forest-labs/flux-dev-lora", 
-                      num_outputs=1, image=None):
+    def generate_image(self, prompt, seed, aspect_ratio, steps, guidance, go_fast, lora_path="", lora_scale=1.0,
+                       api_key="", extra_lora="", extra_lora_scale=1.0, model="black-forest-labs/flux-dev-lora",
+                       num_outputs=1, image=None, timeout=60):
         # 更新API key
         if api_key.strip():
             self.api_key = api_key
@@ -83,7 +140,8 @@ class ReplicateRequstNode:
             self.configure_replicate()
 
         if not self.api_key:
-            raise ValueError("API key not found in replicate_config.yml or node input")
+            raise ValueError(
+                "API key not found in replicate_config.yml or node input")
 
         try:
             # 准备输入参数
@@ -110,21 +168,22 @@ class ReplicateRequstNode:
                 # 将tensor转换为PIL图像，然后保存为临时文件
                 from .utils import tensor2pil
                 pil_image = tensor2pil(image[0])  # 取第一张图片
-                
+
                 # 创建临时文件
                 with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
                     pil_image.save(temp_file.name, format='PNG')
                     temp_file_path = temp_file.name
-                
+
                 # 使用open()创建文件对象
                 input_params["input_image"] = open(temp_file_path, "rb")
                 logger.debug(f"已添加输入图像文件: {temp_file_path}")
 
             logger.debug(f"调用Replicate API，参数: {input_params}")
 
+            runner = ComfyUIReplicateRun(timeout_seconds=timeout, check_interval=1.0)
             # 调用Replicate API
-            output = self.client.run(model, input=input_params)
-            
+            output = runner.run_with_interrupt_check(self.client, model, input=input_params)
+
             # 清理临时文件
             if image is not None and len(image) > 0:
                 try:
@@ -148,12 +207,12 @@ class ReplicateRequstNode:
                 if len(image_array.shape) == 3 and image_array.shape[2] == 4:
                     image_array = image_array[:, :, :3]
                 images.append(image_array)
-            
+
             from .utils import np2tensor
             image_tensor = np2tensor(images)
             urls_str = ",".join(urls)
-            
-            return  (image_tensor, width, height, urls_str)
+
+            return (image_tensor, width, height, urls_str)
 
         except Exception as e:
             logger.exception(f"Replicate API调用失败: {str(e)}")
@@ -167,4 +226,3 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ReplicateRequstNode": "Replicate Request",
 }
-
