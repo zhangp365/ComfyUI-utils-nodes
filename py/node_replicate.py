@@ -65,10 +65,12 @@ class ComfyUIReplicateRun:
             while True:
                 # 检查超时
                 if time.time() - start_time > self.timeout_seconds:
+                    prediction.cancel()
                     raise Exception(f"timeout ({self.timeout_seconds} seconds)")
 
                 # 检查ComfyUI中断信号
                 if comfy.model_management.processing_interrupted():
+                    prediction.cancel()
                     raise comfy.model_management.InterruptProcessingException(
                         "ComfyUI interrupted")
 
@@ -82,6 +84,7 @@ class ComfyUIReplicateRun:
                 elif prediction.status in ["starting", "processing"]:
                     time.sleep(self.check_interval)
                 else:
+                    prediction.cancel()
                     raise Exception(f"unknown status: {prediction.status}")
 
         except Exception as e:
