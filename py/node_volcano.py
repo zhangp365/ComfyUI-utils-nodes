@@ -3,9 +3,8 @@ import numpy as np
 import base64
 import io
 from PIL import Image
-import tempfile
 import os
-from volcengine.visual.VisualService import VisualService
+
 import folder_paths
 import logging
 import yaml
@@ -21,6 +20,7 @@ class VolcanoBaseNode:
     """火山引擎视觉服务基类"""
     
     def __init__(self):
+        from volcengine.visual.VisualService import VisualService
         self.visual_service = VisualService()
     
     def save_config(self, config):

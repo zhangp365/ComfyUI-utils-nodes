@@ -8,7 +8,6 @@ import numpy as np
 import yaml
 import logging
 import folder_paths
-from replicate.client import Client
 import os
 import sys
 sys.path.append(".")
@@ -94,6 +93,7 @@ class ComfyUIReplicateRun:
 
 class ReplicateRequstNode:
     def __init__(self, api_key=None):
+        from replicate.client import Client
         config = get_config()
         self.api_key = api_key or config.get("REPLICATE_API_TOKEN")
         if self.api_key is not None:
