@@ -224,7 +224,7 @@ class ConcatTextOfUtils:
     @ staticmethod
     def fun(text1, separator, text2, text3=""):
         texts = [text1, text2, text3]
-        texts = [text.strip() for text in texts if text.strip()]
+        texts = [text for text in texts if text]
         return (separator.join(texts),)
 
 class GenderWordsConfig:
