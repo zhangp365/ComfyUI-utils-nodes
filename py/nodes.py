@@ -423,17 +423,29 @@ class ImageConcanateOfUtils:
         if len(images) == 1:
             return (images[0],)
         
-        # 调整所有图片的大小为第一张图片的大小
-        for i in range(1, len(images)):
-            if images[i].shape[1:] != images[0].shape[1:]:
-                images[i] = comfy.utils.common_upscale(
-                    images[i].movedim(-1, 1), images[0].shape[2], images[0].shape[1], "bilinear", "center").movedim(1, -1)
-        
-        # 根据方向拼接图片
+        # 根据拼接方向调整图片尺寸
         if direction in ['right', 'left']:
+            # 左右拼接：调整到同一高度
+            target_height = images[0].shape[1]
+            for i in range(1, len(images)):
+                if images[i].shape[1] != target_height:
+                    # 计算等比例缩放后的宽度
+                    aspect_ratio = images[i].shape[2] / images[i].shape[1]
+                    target_width = int(target_height * aspect_ratio)
+                    images[i] = comfy.utils.common_upscale(
+                        images[i].movedim(-1, 1), target_width, target_height, "bilinear", "center").movedim(1, -1)
             row = torch.cat(images if direction == 'right' else [i for i in reversed(images)], dim=2)
         elif direction in ['down', 'up']:
-            row = torch.cat(images if direction == 'down' else [i for i in reversed(images)], dim=1)
+            # 上下拼接：调整到同一宽度
+            target_width = images[0].shape[2]
+            for i in range(1, len(images)):
+                if images[i].shape[2] != target_width:
+                    # 计算等比例缩放后的高度
+                    aspect_ratio = images[i].shape[1] / images[i].shape[2]
+                    target_height = int(target_width * aspect_ratio)
+                    images[i] = comfy.utils.common_upscale(
+                        images[i].movedim(-1, 1), target_width, target_height, "bilinear", "center").movedim(1, -1)
+            row = torch.cat(images if direction == 'down' else [i for i in reversed(images)], dim=1)          
         
         return (row,)
 
