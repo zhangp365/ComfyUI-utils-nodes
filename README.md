@@ -174,4 +174,4 @@ This node is designed to return an empty conditioning, the size is zero. It can 
 This node is designed to crop the image by the mask to a specific size.
 
 ## ReplicateRequstNode
-his node is designed to generate images using Replicate's model API. It supports various aspect ratios, LoRA weights, and provides flexible error handling options.
+This node is designed to generate images using Replicate's model API. It supports various aspect ratios, LoRA weights, and provides flexible error handling options.

@@ -69,6 +69,7 @@ class LoadImageWithoutListDir(LoadImage):
                 {"image": ([], {"image_upload": True})},
                 "optional": {
                     "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                    "input_image_path": ("STRING",),
                 }
                 }
 
@@ -78,10 +79,12 @@ class LoadImageWithoutListDir(LoadImage):
     RETURN_NAMES = ("image", "mask", "enabled", "filename", "width", "height")
     FUNCTION = "load_image_with_switch"
 
-    def load_image_with_switch(self, image, enabled=True):
+    def load_image_with_switch(self, image, enabled=True, input_image_path=""):
         logger.debug("start load image")
         if not enabled:
             return None, None, enabled, "", 0, 0
+        if input_image_path:
+            image = input_image_path
         output_image, output_mask = self.load_image(image)
         return (output_image, output_mask, enabled, image, output_image.shape[2], output_image.shape[1])
 
