@@ -175,3 +175,6 @@ This node is designed to crop the image by the mask to a specific size.
 
 ## ReplicateRequstNode
 This node is designed to generate images using Replicate's model API. It supports various aspect ratios, LoRA weights, and provides flexible error handling options.
+
+## ReplicateVideoRequestNode
+This node is designed to generate videos using Replicate's model API, with Wan2.2 as the default video model.

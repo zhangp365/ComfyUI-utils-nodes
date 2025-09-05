@@ -11,7 +11,9 @@ import folder_paths
 import os
 import sys
 sys.path.append(".")
-
+from comfy_api.latest._input_impl.video_types import VideoFromFile
+from comfy.comfy_types import IO, FileLocator, ComfyNodeABC
+from .utils import tensor2pil, np2tensor
 logger = logging.getLogger(__name__)
 
 config_dir = os.path.join(folder_paths.base_path, "config")
@@ -169,7 +171,6 @@ class ReplicateRequstNode:
             # 处理输入图像
             if image is not None and len(image) > 0:
                 # 将tensor转换为PIL图像，然后保存为临时文件
-                from .utils import tensor2pil
                 pil_image = tensor2pil(image[0])  # 取第一张图片
 
                 # 创建临时文件
@@ -211,7 +212,6 @@ class ReplicateRequstNode:
                     image_array = image_array[:, :, :3]
                 images.append(image_array)
 
-            from .utils import np2tensor
             image_tensor = np2tensor(images)
             urls_str = ",".join(urls)
 
@@ -222,10 +222,141 @@ class ReplicateRequstNode:
             raise e
 
 
+class ReplicateVideoRequestNode:
+    def __init__(self, api_key=None):
+        from replicate.client import Client
+        config = get_config()
+        self.api_key = api_key or config.get("REPLICATE_API_TOKEN")
+        if self.api_key is not None:
+            self.configure_replicate()
+        self.client = Client(timeout=300)
+
+    def configure_replicate(self):
+        if self.api_key:
+            os.environ["REPLICATE_API_TOKEN"] = self.api_key
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {                
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": "wan-video/wan-2.2-i2v-fast"}),
+                "num_frames": ("INT", {"default": 81, "min": 81, "max": 121}),
+                "resolution": (["480p", "720p"], {"default": "720p"}),
+                "frames_per_second": ("INT", {"default": 16, "min": 5, "max": 30, "step": 1}),
+            },
+            "optional": {
+                "image": ("IMAGE",),
+                "go_fast": ("BOOLEAN", {"default": True}),
+                "sample_shift": ("FLOAT", {"default": 12.0, "min": 1.0, "max": 20.0, "step": 0.1}),
+                "lora_weights_transformer": ("STRING", {"default": ""}),
+                "lora_scale_transformer": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.01}),
+                "lora_weights_transformer_2": ("STRING", {"default": ""}),
+                "lora_scale_transformer_2": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.01}),
+                "api_key": ("STRING", {"default": ""}),
+                "timeout": ("INT", {"default": 300, "min": 1, "max": 3000}),
+            }
+        }
+
+    RETURN_TYPES = (IO.VIDEO, "INT", "INT", "FLOAT", "STRING")
+    RETURN_NAMES = ("video", "width", "height", "fps", "url")
+    FUNCTION = "generate_video"
+    CATEGORY = "utils/video"
+
+    def generate_video(self, prompt, model, num_frames, resolution, frames_per_second, image=None,
+                      go_fast=True, sample_shift=12.0, lora_weights_transformer="", 
+                      lora_scale_transformer=1.0, lora_weights_transformer_2="", 
+                      lora_scale_transformer_2=1.0, api_key="", timeout=300):
+        
+        if api_key.strip():
+            self.api_key = api_key
+            save_config({"REPLICATE_API_TOKEN": self.api_key})
+            self.configure_replicate()
+
+        if not self.api_key:
+            raise ValueError("API key not found in replicate_config.yml or node input")
+
+        try:
+            input_params = {                
+                "prompt": prompt,
+                "num_frames": num_frames,
+                "resolution": resolution,
+                "frames_per_second": frames_per_second,
+                "go_fast": go_fast,
+                "sample_shift": sample_shift,
+            }
+
+            if image is not None and len(image) > 0:
+                pil_image = tensor2pil(image[0])
+                
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                    pil_image.save(temp_file.name, format='PNG')
+                    temp_file_path = temp_file.name
+                
+                input_params["image"] = open(temp_file_path, "rb")
+
+            if lora_weights_transformer.strip():
+                input_params["lora_weights_transformer"] = lora_weights_transformer
+                input_params["lora_scale_transformer"] = lora_scale_transformer
+
+            if lora_weights_transformer_2.strip():
+                input_params["lora_weights_transformer_2"] = lora_weights_transformer_2
+                input_params["lora_scale_transformer_2"] = lora_scale_transformer_2
+
+            logger.debug(f"调用Replicate API生成视频，参数: {input_params}")
+
+            runner = ComfyUIReplicateRun(timeout_seconds=timeout, check_interval=1.0)
+            output = runner.run_with_interrupt_check(self.client, model, input=input_params)
+
+            if image is not None and len(image) > 0:
+                try:
+                    input_params["image"].close()
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+
+            if not isinstance(output, list):
+                output = [output]
+
+            video_url = output[0] if output else None
+            if not video_url:
+                raise Exception("No video URL returned from API")
+
+            logger.debug(f"生成的视频URL: {video_url}")
+
+            videos_dir = os.path.join(folder_paths.get_output_directory(), "videos_utils_nodes")
+            if not os.path.exists(videos_dir):
+                os.makedirs(videos_dir)
+
+            video_filename = f"replicate_video_{int(time.time())}.mp4"
+            video_path = os.path.join(videos_dir, video_filename)
+
+            response = requests.get(video_url)
+            response.raise_for_status()
+
+            with open(video_path, 'wb') as f:
+                f.write(response.content)
+
+            logger.info(f"视频已保存到: {video_path}")
+
+            video_input = VideoFromFile(video_path)
+            width, height = video_input.get_dimensions()
+            fps = float(frames_per_second)
+
+            return (video_input, width, height, fps, video_url)
+
+        except Exception as e:
+            logger.exception(f"Replicate视频生成失败: {str(e)}")
+            raise e
+
+
 NODE_CLASS_MAPPINGS = {
     "ReplicateRequstNode": ReplicateRequstNode,
+    "ReplicateVideoRequestNode": ReplicateVideoRequestNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ReplicateRequstNode": "Replicate Request",
+    "ReplicateVideoRequestNode": "Replicate Video Request",
+    "ReplicateRequstNode": "Replicate Image Request",
 }
+
