@@ -246,7 +246,7 @@ class ReplicateVideoRequestNode:
                 "frames_per_second": ("INT", {"default": 16, "min": 5, "max": 30, "step": 1}),
             },
             "optional": {
-                "image": ("IMAGE",),
+                "image": ("IMAGE", {"default": None, "tooltip": "The image for the image to video only."}),
                 "go_fast": ("BOOLEAN", {"default": True}),
                 "sample_shift": ("FLOAT", {"default": 12.0, "min": 1.0, "max": 20.0, "step": 0.1}),
                 "lora_weights_transformer": ("STRING", {"default": ""}),
@@ -255,6 +255,9 @@ class ReplicateVideoRequestNode:
                 "lora_scale_transformer_2": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.01}),
                 "api_key": ("STRING", {"default": ""}),
                 "timeout": ("INT", {"default": 300, "min": 1, "max": 3000}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
+                "disable_safety_checker": ("BOOLEAN", {"default": True}),
+                "aspect_ratio": (["16:9", "9:16"], {"default": "16:9", "tooltip": "The aspect ratio for the text to video only."}),
             }
         }
 
@@ -266,7 +269,7 @@ class ReplicateVideoRequestNode:
     def generate_video(self, prompt, model, num_frames, resolution, frames_per_second, image=None,
                       go_fast=True, sample_shift=12.0, lora_weights_transformer="", 
                       lora_scale_transformer=1.0, lora_weights_transformer_2="", 
-                      lora_scale_transformer_2=1.0, api_key="", timeout=300):
+                      lora_scale_transformer_2=1.0, api_key="", timeout=300, seed=0, disable_safety_checker=True, aspect_ratio="16:9"):
         
         if api_key.strip():
             self.api_key = api_key
@@ -284,6 +287,9 @@ class ReplicateVideoRequestNode:
                 "frames_per_second": frames_per_second,
                 "go_fast": go_fast,
                 "sample_shift": sample_shift,
+                "seed": seed,
+                "disable_safety_checker": disable_safety_checker,
+                "aspect_ratio": aspect_ratio,
             }
 
             if image is not None and len(image) > 0:
