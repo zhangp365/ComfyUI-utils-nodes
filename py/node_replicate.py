@@ -291,15 +291,18 @@ class ReplicateVideoRequestNode:
                 "disable_safety_checker": disable_safety_checker,
                 "aspect_ratio": aspect_ratio,
             }
-
+            temp_file_paths = []
             if image is not None and len(image) > 0:
-                pil_image = tensor2pil(image[0])
-                
-                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
-                    pil_image.save(temp_file.name, format='PNG')
-                    temp_file_path = temp_file.name
-                
-                input_params["image"] = open(temp_file_path, "rb")
+                for i, image_tensor in enumerate(image):
+                    pil_image = tensor2pil(image_tensor)
+                    
+                    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                        pil_image.save(temp_file.name, format='PNG')
+                        temp_file_paths.append(temp_file.name)
+                    if i == 0:
+                        input_params["image"] = open(temp_file_paths[-1], "rb")
+                    else:
+                        input_params["last_image"] = open(temp_file_paths[-1], "rb")
 
             if lora_weights_transformer.strip():
                 input_params["lora_weights_transformer"] = lora_weights_transformer
@@ -314,9 +317,12 @@ class ReplicateVideoRequestNode:
             runner = ComfyUIReplicateRun(timeout_seconds=timeout, check_interval=1.0)
             output = runner.run_with_interrupt_check(self.client, model, input=input_params)
 
-            if image is not None and len(image) > 0:
+            for i, temp_file_path in enumerate(temp_file_paths): 
                 try:
-                    input_params["image"].close()
+                    if i == 0:
+                        input_params["image"].close()
+                    else:
+                        input_params["last_image"].close()
                     os.unlink(temp_file_path)
                 except:
                     pass
