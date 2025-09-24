@@ -145,6 +145,7 @@ class NovitaVideoRequestNode:
                     raise comfy.model_management.InterruptProcessingException("ComfyUI interrupted")
 
                 result = self.query_video_result(task_id)
+                logger.debug(f"查询视频生成结果: {result}")
                 task_status = result["task"]["status"]
 
                 if task_status == "TASK_STATUS_SUCCEED":
@@ -176,10 +177,12 @@ class NovitaVideoRequestNode:
 
                     return (video_input, width, height, fps, video_url)
 
-                elif task_status == "failed":
-                    reason = result["task"].get("reason", "Unknown error")
-                    raise Exception(f"视频生成失败: {reason}")
+                elif task_status == "TASK_STATUS_FAILED":
+                    logger.error(f"视频生成失败: {result}")
+                    raise Exception(f"视频生成失败: {result}")
 
+                else:
+                    logger.info(f"视频生成中，task_status: {task_status}")
                 time.sleep(2)
 
             raise Exception(f"视频生成超时 ({timeout} 秒)")
