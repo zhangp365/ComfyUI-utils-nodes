@@ -17,3 +17,6 @@ volcengine
 
 # replicate node
 replicate>=0.22.0
+
+# fal node
+fal-client>=0.7.0
