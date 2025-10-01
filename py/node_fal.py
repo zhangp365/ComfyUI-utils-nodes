@@ -283,6 +283,7 @@ class FalVideo2VideoRequestNode(BaseFalNode):
                 "num_inference_steps": ("INT", {"default": 30, "min": 1, "max": 100, "tooltip": "推理步数"}),
                 "guidance_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.1, "tooltip": "引导强度"}),
                 "shift": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 10.0, "step": 0.1, "tooltip": "偏移参数"}),
+                "ref_image": ("IMAGE", {"tooltip": "参考图像"}),
                 "ref_image_urls": ("STRING", {"default": "", "multiline": True, "tooltip": "参考图像URL列表，每行一个"}),
                 "first_frame": ("IMAGE", {"tooltip": "首帧图像"}),
                 "last_frame": ("IMAGE", {"tooltip": "末帧图像"}),
@@ -328,7 +329,7 @@ class FalVideo2VideoRequestNode(BaseFalNode):
                       match_input_frames_per_second=True, frames_per_second=16,
                       seed=0, resolution="auto", aspect_ratio="auto",
                       num_inference_steps=30, guidance_scale=5.0, shift=5.0,
-                      ref_image_urls="", first_frame=None, last_frame=None,
+                      ref_image=None, ref_image_urls="", first_frame=None, last_frame=None,
                       enable_safety_checker=False, enable_prompt_expansion=False,
                       preprocess=True, acceleration="regular", video_quality="high",
                       video_write_mode="balanced", num_interpolated_frames=0,
@@ -376,10 +377,18 @@ class FalVideo2VideoRequestNode(BaseFalNode):
 
             if seed > 0:
                 arguments["seed"] = seed
+            
+            # 处理参考图片URL列表
+            ref_urls = []
+            if ref_image is not None and len(ref_image) > 0:
+                ref_image_url = self._upload_image(ref_image)
+                ref_urls.append(ref_image_url)
             if ref_image_urls.strip():
-                ref_urls = [url.strip() for url in ref_image_urls.split('\n') if url.strip()]
-                if ref_urls:
-                    arguments["ref_image_urls"] = ref_urls
+                additional_urls = [url.strip() for url in ref_image_urls.split('\n') if url.strip()]
+                ref_urls.extend(additional_urls)
+            if ref_urls:
+                arguments["ref_image_urls"] = ref_urls
+                
             if first_frame is not None and len(first_frame) > 0:
                 first_frame_object = self._upload_image(first_frame)
                 arguments["first_frame_url"] = first_frame_object
