@@ -112,7 +112,9 @@ def on_queue_update(update):
             logger.debug(f"FAL日志: {log['message']}")
 
 
-class FalVideoRequestNode:
+class BaseFalNode:
+    """FAL API 基础节点类，提供通用的 API 调用功能"""
+    
     def __init__(self, api_key=None):
         config = get_fal_config()
         self.api_key = api_key or config.get("FAL_KEY")
@@ -123,6 +125,60 @@ class FalVideoRequestNode:
         if self.api_key:
             os.environ["FAL_KEY"] = self.api_key
 
+    def _upload_image(self, image):
+        """上传图像到FAL并返回文件对象"""
+        if image is not None and len(image) > 0:
+            pil_image = tensor2pil(image[0])
+            
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                pil_image.save(temp_file.name, format='PNG')
+                temp_file_path = temp_file.name
+            
+            input_image_object = fal_client.upload_file(temp_file_path)
+            logger.info(f"图像已上传到FAL: {input_image_object}")
+            
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+                
+            return input_image_object
+        else:
+            raise ValueError("输入图像不能为空")
+
+    def _call_fal_api(self, model, arguments, timeout=300):
+        """调用FAL API的通用方法"""
+        runner = ComfyUIFalRun(timeout_seconds=timeout, check_interval=1.0)
+        return runner.run_with_interrupt_check(model, arguments, on_queue_update)
+
+    def _download_and_save_video(self, video_url, subfolder="videos_fal"):
+        """下载并保存视频文件"""
+        videos_dir = os.path.join(folder_paths.get_output_directory(), subfolder)
+        if not os.path.exists(videos_dir):
+            os.makedirs(videos_dir)
+
+        video_filename = f"fal_video_{int(time.time())}.mp4"
+        video_path = os.path.join(videos_dir, video_filename)
+
+        response = requests.get(video_url, timeout=60)
+        response.raise_for_status()
+
+        with open(video_path, 'wb') as f:
+            f.write(response.content)
+
+        logger.info(f"视频已保存到: {video_path}")
+        return video_path
+
+    def _create_video_object(self, video_path, fps=24.0):
+        """创建视频对象并返回相关信息"""
+        video_input = VideoFromFile(video_path)
+        width, height = video_input.get_dimensions()
+        return video_input, width, height, fps
+
+
+class FalImage2VideoRequestNode(BaseFalNode):
+    """FAL 图像转视频请求节点"""
+    
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -166,27 +222,8 @@ class FalVideoRequestNode:
             raise ValueError("API key not found in fal_config.yml or node input")
 
         try:
-            # 处理输入图像
-            if image is not None and len(image) > 0:
-                pil_image = tensor2pil(image[0])
-                
-                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
-                    pil_image.save(temp_file.name, format='PNG')
-                    temp_file_path = temp_file.name
-                
-                # 上传图像到FAL
-                input_image_object = fal_client.upload_file(temp_file_path)
-                logger.info(f"图像已上传到FAL: {input_image_object}")
-                
-                # 清理临时文件
-                try:
-                    os.unlink(temp_file_path)
-                except:
-                    pass
-            else:
-                raise ValueError("输入图像不能为空")
+            input_image_object = self._upload_image(image)
 
-            # 准备请求参数
             arguments = {
                 "image_url": input_image_object,
                 "prompt": prompt,
@@ -199,7 +236,6 @@ class FalVideoRequestNode:
                 "video_write_mode": video_write_mode
             }
 
-            # 添加可选参数
             if seed > 0:
                 arguments["seed"] = seed
             if end_image_url.strip():
@@ -207,39 +243,14 @@ class FalVideoRequestNode:
 
             logger.debug(f"调用FAL API，参数: {arguments}")
 
-            runner = ComfyUIFalRun(timeout_seconds=timeout, check_interval=1.0)
-            result = runner.run_with_interrupt_check(
-                model, 
-                arguments, 
-                on_queue_update
-            )
-
+            result = self._call_fal_api(model, arguments, timeout)
             logger.info(f"FAL API调用成功，输出: {result}")
             
             video_url = result["video"]["url"]
             logger.debug(f"生成的视频URL: {video_url}")
 
-            # 创建视频保存目录
-            videos_dir = os.path.join(folder_paths.get_output_directory(), "videos_fal")
-            if not os.path.exists(videos_dir):
-                os.makedirs(videos_dir)
-
-            # 下载视频
-            video_filename = f"fal_video_{int(time.time())}.mp4"
-            video_path = os.path.join(videos_dir, video_filename)
-
-            response = requests.get(video_url, timeout=60)
-            response.raise_for_status()
-
-            with open(video_path, 'wb') as f:
-                f.write(response.content)
-
-            logger.info(f"视频已保存到: {video_path}")
-
-            # 创建视频对象
-            video_input = VideoFromFile(video_path)
-            width, height = video_input.get_dimensions()
-            fps = 24.0  # FAL默认帧率
+            video_path = self._download_and_save_video(video_url)
+            video_input, width, height, fps = self._create_video_object(video_path)
 
             return (video_input, width, height, fps, video_url)
 
@@ -248,10 +259,158 @@ class FalVideoRequestNode:
             raise e
 
 
+class FalVideo2VideoRequestNode(BaseFalNode):
+    """FAL 视频转视频请求节点"""
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video_name": ("STRING", {"default": "", "tooltip": "输入视频文件名（位于input目录）"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "视频描述"}),
+                "model": ("STRING", {"default": "fal-ai/wan-22-vace-fun-a14b/pose", "tooltip": "FAL模型名称"}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": "", "tooltip": "FAL API密钥"}),
+                "negative_prompt": ("STRING", {"default": "letterboxing, borders, black bars, bright colors, overexposed, static, blurred details, subtitles, style, artwork, painting, picture, still, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, malformed limbs, fused fingers, still picture, cluttered background, three legs, many people in the background, walking backwards", "multiline": True, "tooltip": "负面提示词"}),
+                "match_input_num_frames": ("BOOLEAN", {"default": True, "tooltip": "匹配输入视频帧数"}),
+                "num_frames": ("INT", {"default": 81, "min": 81, "max": 241, "tooltip": "生成帧数"}),
+                "match_input_frames_per_second": ("BOOLEAN", {"default": True, "tooltip": "匹配输入视频帧率"}),
+                "frames_per_second": ("INT", {"default": 16, "min": 5, "max": 30, "tooltip": "视频帧率"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "随机种子"}),
+                "resolution": (["auto", "240p", "360p", "480p", "580p", "720p"], {"default": "auto", "tooltip": "视频分辨率"}),
+                "aspect_ratio": (["auto", "16:9", "1:1", "9:16"], {"default": "auto", "tooltip": "宽高比"}),
+                "num_inference_steps": ("INT", {"default": 30, "min": 1, "max": 100, "tooltip": "推理步数"}),
+                "guidance_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.1, "tooltip": "引导强度"}),
+                "shift": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 10.0, "step": 0.1, "tooltip": "偏移参数"}),
+                "ref_image_urls": ("STRING", {"default": "", "multiline": True, "tooltip": "参考图像URL列表，每行一个"}),
+                "first_frame": ("IMAGE", {"tooltip": "首帧图像"}),
+                "last_frame": ("IMAGE", {"tooltip": "末帧图像"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False, "tooltip": "启用安全检查"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False, "tooltip": "启用提示扩展"}),
+                "preprocess": ("BOOLEAN", {"default": True, "tooltip": "预处理输入视频"}),
+                "acceleration": (["none", "regular"], {"default": "regular", "tooltip": "加速模式"}),
+                "video_quality": (["low", "medium", "high", "maximum"], {"default": "high", "tooltip": "视频质量"}),
+                "video_write_mode": (["fast", "balanced", "small"], {"default": "balanced", "tooltip": "视频写入模式"}),
+                "num_interpolated_frames": ("INT", {"default": 0, "min": 0, "max": 100, "tooltip": "插值帧数"}),
+                "temporal_downsample_factor": ("INT", {"default": 0, "min": 0, "max": 10, "tooltip": "时间下采样因子"}),
+                "enable_auto_downsample": ("BOOLEAN", {"default": False, "tooltip": "启用自动下采样"}),
+                "auto_downsample_min_fps": ("FLOAT", {"default": 15.0, "min": 1.0, "max": 30.0, "step": 0.1, "tooltip": "自动下采样最小帧率"}),
+                "interpolator_model": (["rife", "film"], {"default": "film", "tooltip": "插值模型"}),
+                "sync_mode": ("BOOLEAN", {"default": False, "tooltip": "同步模式"}),
+                "timeout": ("INT", {"default": 300, "min": 1, "max": 3000, "tooltip": "超时时间(秒)"}),
+            }
+        }
+
+    RETURN_TYPES = (IO.VIDEO, "INT", "INT", "FLOAT", "STRING")
+    RETURN_NAMES = ("video", "width", "height", "fps", "url")
+    FUNCTION = "generate_video"
+    CATEGORY = "utils/video"
+
+    def _upload_video(self, video_name):
+        """上传视频到FAL并返回文件对象"""
+        if video_name and video_name.strip():
+            # 从 ComfyUI 的 input 目录拼接完整路径
+            input_dir = folder_paths.get_input_directory()
+            video_path = os.path.join(input_dir, video_name)
+            
+            if os.path.exists(video_path):
+                input_video_url = fal_client.upload_file(video_path)
+                logger.info(f"视频已上传到FAL: {input_video_url}")
+                return input_video_url
+            else:
+                raise ValueError(f"视频文件不存在: {video_path}")
+        else:
+            raise ValueError("视频文件名不能为空")
+
+    def generate_video(self, video_name, prompt, model, api_key="", negative_prompt="", 
+                      match_input_num_frames=True, num_frames=81, 
+                      match_input_frames_per_second=True, frames_per_second=16,
+                      seed=0, resolution="auto", aspect_ratio="auto",
+                      num_inference_steps=30, guidance_scale=5.0, shift=5.0,
+                      ref_image_urls="", first_frame=None, last_frame=None,
+                      enable_safety_checker=False, enable_prompt_expansion=False,
+                      preprocess=True, acceleration="regular", video_quality="high",
+                      video_write_mode="balanced", num_interpolated_frames=0,
+                      temporal_downsample_factor=0, enable_auto_downsample=False,
+                      auto_downsample_min_fps=15.0, interpolator_model="film",
+                      sync_mode=False, timeout=300):
+        
+        if api_key.strip():
+            self.api_key = api_key
+            save_fal_config({"FAL_KEY": self.api_key})
+            self.configure_fal()
+
+        if not self.api_key:
+            raise ValueError("API key not found in fal_config.yml or node input")
+
+        try:
+            input_video_url = self._upload_video(video_name)
+
+            arguments = {
+                "video_url": input_video_url,
+                "prompt": prompt,
+                "negative_prompt": negative_prompt,
+                "match_input_num_frames": match_input_num_frames,
+                "num_frames": num_frames,
+                "match_input_frames_per_second": match_input_frames_per_second,
+                "frames_per_second": frames_per_second,
+                "resolution": resolution,
+                "aspect_ratio": aspect_ratio,
+                "num_inference_steps": num_inference_steps,
+                "guidance_scale": guidance_scale,
+                "shift": shift,
+                "enable_safety_checker": enable_safety_checker,
+                "enable_prompt_expansion": enable_prompt_expansion,
+                "preprocess": preprocess,
+                "acceleration": acceleration,
+                "video_quality": video_quality,
+                "video_write_mode": video_write_mode,
+                "num_interpolated_frames": num_interpolated_frames,
+                "temporal_downsample_factor": temporal_downsample_factor,
+                "enable_auto_downsample": enable_auto_downsample,
+                "auto_downsample_min_fps": auto_downsample_min_fps,
+                "interpolator_model": interpolator_model,
+                "sync_mode": sync_mode
+            }
+
+            if seed > 0:
+                arguments["seed"] = seed
+            if ref_image_urls.strip():
+                ref_urls = [url.strip() for url in ref_image_urls.split('\n') if url.strip()]
+                if ref_urls:
+                    arguments["ref_image_urls"] = ref_urls
+            if first_frame is not None and len(first_frame) > 0:
+                first_frame_object = self._upload_image(first_frame)
+                arguments["first_frame_url"] = first_frame_object
+            if last_frame is not None and len(last_frame) > 0:
+                last_frame_object = self._upload_image(last_frame)
+                arguments["last_frame_url"] = last_frame_object
+
+            logger.debug(f"调用FAL API，参数: {arguments}")
+
+            result = self._call_fal_api(model, arguments, timeout)
+            logger.info(f"FAL API调用成功，输出: {result}")
+            
+            video_url = result["video"]["url"]
+            logger.debug(f"生成的视频URL: {video_url}")
+
+            video_path = self._download_and_save_video(video_url, "videos_fal_v2v")
+            video_input, width, height, fps = self._create_video_object(video_path)
+
+            return (video_input, width, height, fps, video_url)
+
+        except Exception as e:
+            logger.exception(f"FAL视频转视频生成失败: {str(e)}")
+            raise e
+
+
 NODE_CLASS_MAPPINGS = {
-    "FalVideoRequestNode": FalVideoRequestNode,
+    "FalImage2VideoRequestNode": FalImage2VideoRequestNode,
+    "FalVideo2VideoRequestNode": FalVideo2VideoRequestNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "FalVideoRequestNode": "FAL Video Request",
+    "FalImage2VideoRequestNode": "FAL Image2Video Request",
+    "FalVideo2VideoRequestNode": "FAL Video2Video Request",
 }

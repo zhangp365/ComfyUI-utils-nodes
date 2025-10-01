@@ -173,23 +173,8 @@ class SegmindVideoRequestNode:
             runner = ComfyUISegmindRun(timeout_seconds=timeout, check_interval=1.0)
             response = runner.run_with_interrupt_check(url, data, headers)
 
-            logger.info(f"Segmind API调用成功，状态码: {response}")
+            logger.info(f"Segmind API调用成功，状态码: {response.status_code}")
             
-            # 检查响应内容类型
-            content_type = response.headers.get('content-type', '')
-            if 'application/json' in content_type:
-                # JSON响应，可能包含错误信息
-                result = response.json()
-                if 'error' in result:
-                    raise Exception(f"Segmind API错误: {result['error']}")
-                # 如果成功，视频URL可能在result中
-                video_url = result.get('video_url') or result.get('url')
-                if not video_url:
-                    raise Exception("API响应中未找到视频URL")
-            else:
-                # 直接返回视频文件
-                video_url = "segmind_generated_video"
-
             # 创建视频保存目录
             videos_dir = os.path.join(folder_paths.get_output_directory(), "videos_segmind")
             if not os.path.exists(videos_dir):
@@ -199,16 +184,9 @@ class SegmindVideoRequestNode:
             video_filename = f"segmind_video_{int(time.time())}.mp4"
             video_path = os.path.join(videos_dir, video_filename)
 
-            if video_url == "segmind_generated_video":
-                # 直接保存响应内容
-                with open(video_path, 'wb') as f:
-                    f.write(response.content)
-            else:
-                # 从URL下载视频
-                video_response = requests.get(video_url, timeout=60)
-                video_response.raise_for_status()
-                with open(video_path, 'wb') as f:
-                    f.write(video_response.content)
+            # 直接保存响应内容作为视频
+            with open(video_path, 'wb') as f:
+                f.write(response.content)
 
             logger.info(f"视频已保存到: {video_path}")
 
@@ -217,7 +195,7 @@ class SegmindVideoRequestNode:
             width, height = video_input.get_dimensions()
             fps = float(frames_per_second)
 
-            return (video_input, width, height, fps, video_url)
+            return (video_input, width, height, fps, video_path)
 
         except Exception as e:
             logger.exception(f"Segmind视频生成失败: {str(e)}")
