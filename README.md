@@ -178,3 +178,19 @@ This node is designed to generate images using Replicate's model API. It support
 
 ## ReplicateVideoRequestNode
 This node is designed to generate videos using Replicate's model API, with Wan2.2 as the default video model.
+
+## NovitaVideoRequestNode
+This node is designed to generate videos using Novita's API. It supports image-to-video generation with various resolution options and duration settings.
+
+## FalImage2VideoRequestNode
+This node is designed to generate videos from images using FAL's API. It provides high-quality video generation with various customization options.
+
+## FalVideo2VideoRequestNode
+This node is designed to use the fal-ai/wan-22-vace-fun-a14b/pose model. When you input a pose video and an image, it will generate an action video based on the pose sequence.
+
+## FalFunControlVideoRequestNode
+This node is designed to use the fal-ai/wan-fun-control model. It can input pose or depth videos along with a reference frame, then generate the resulting video based on the control input.
+
+## SegmindVideoRequestNode
+This node is designed to generate videos from image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.
+

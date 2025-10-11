@@ -424,7 +424,7 @@ class FalFunControlVideoRequestNode(BaseFalNode):
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "视频生成提示词"}),
                 "video_name": ("STRING", {"default": "", "tooltip": "输入视频文件名（位于input目录）"}),
-                "model": ("STRING", {"default": "fal-ai/wan-22-vace-fun-a14b/pose", "tooltip": "FAL模型名称"}),
+                "model": ("STRING", {"default": "fal-ai/wan-fun-control", "tooltip": "FAL模型名称"}),
             },
             "optional": {
                 "api_key": ("STRING", {"default": "", "tooltip": "FAL API密钥"}),
