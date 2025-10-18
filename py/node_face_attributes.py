@@ -12,6 +12,17 @@ import logging
 logger = logging.getLogger(__file__)
 
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
+
 def prepare_deepface_home():
     deepface_path = os.path.join(folder_paths.models_dir, "deepface")
 
@@ -125,7 +136,7 @@ class DeepfaceAnalyzeFaceAttributes:
         emotion = largest_face.get('dominant_emotion', '') if analyze_emotion else ''
         age = str(largest_face.get('age', '0')) if analyze_age else '0'
         
-        json_info= json.dumps(largest_face)
+        json_info= json.dumps(largest_face, cls=NumpyEncoder)
         return (gender, race, emotion, age, json_info)
     
 NODE_CLASS_MAPPINGS = {
