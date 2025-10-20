@@ -10,7 +10,7 @@ import logging
 import folder_paths
 import os
 import sys
-import fal_client
+
 sys.path.append(".")
 from comfy_api.latest._input_impl.video_types import VideoFromFile
 from comfy.comfy_types import IO, FileLocator, ComfyNodeABC
@@ -48,6 +48,7 @@ class ComfyUIFalRun:
 
     def run_with_interrupt_check(self, model, arguments, on_queue_update=None):
         """带中断检查的fal运行"""
+        import fal_client
         start_time = time.time()
 
         try:
@@ -107,6 +108,7 @@ class ComfyUIFalRun:
 
 def on_queue_update(update):
     """队列更新回调函数"""
+    import fal_client
     if isinstance(update, fal_client.InProgress):
         for log in update.logs:
             logger.debug(f"FAL日志: {log['message']}")
@@ -127,6 +129,7 @@ class BaseFalNode:
 
     def _upload_image(self, image):
         """上传图像到FAL并返回文件对象"""
+        import fal_client
         if image is not None and len(image) > 0:
             pil_image = tensor2pil(image[0])
             
@@ -148,6 +151,7 @@ class BaseFalNode:
             
     def _upload_video(self, video_name):
         """上传视频到FAL并返回文件对象"""
+        import fal_client
         if video_name and video_name.strip():
             # 从 ComfyUI 的 input 目录拼接完整路径
             input_dir = folder_paths.get_input_directory()
