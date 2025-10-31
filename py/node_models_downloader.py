@@ -4,6 +4,7 @@ import requests
 import os
 from tqdm import tqdm
 import folder_paths
+from comfy.comfy_types import IO
 import logging
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class ModelsDownloaderOfUtils:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = (IO.ANY, IO.ANY, IO.ANY, IO.ANY)
     RETURN_NAMES = ("model_name_0", "model_name_1", "model_name_2", "model_name_3")
     FUNCTION = "download_models"
     CATEGORY = "utils/download"
