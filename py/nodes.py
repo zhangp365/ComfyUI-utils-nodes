@@ -90,7 +90,7 @@ class LoadImageWithoutListDir(LoadImage):
 
     
     @classmethod
-    def IS_CHANGED(s, image, enabled):
+    def IS_CHANGED(s, image, enabled, input_image_path=""):
         if not enabled:
             return ""
         image_path = folder_paths.get_annotated_filepath(image)
