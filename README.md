@@ -194,3 +194,5 @@ This node is designed to use the fal-ai/wan-fun-control model. It can input pose
 ## SegmindVideoRequestNode
 This node is designed to generate videos from image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.
 
+## ModelsDownloaderOfUtils
+This node downloads models or LoRAs to a subdirectory. If the model already exists, it simply returns the model name in the corresponding location.
