@@ -2,6 +2,7 @@ import time
 import comfy.model_management
 import tempfile
 import io
+from io import BytesIO
 from PIL import Image
 import requests
 import numpy as np
@@ -10,6 +11,7 @@ import logging
 import folder_paths
 import os
 import sys
+import torch
 
 sys.path.append(".")
 from comfy_api.latest._input_impl.video_types import VideoFromFile
@@ -194,6 +196,20 @@ class BaseFalNode:
         video_input = VideoFromFile(video_path)
         width, height = video_input.get_dimensions()
         return video_input, width, height, fps
+
+    def _download_and_convert_image(self, image_url):
+        """下载图片并转换为ComfyUI的IMAGE格式"""
+        response = requests.get(image_url, timeout=60)
+        response.raise_for_status()
+        
+        image_bytes = BytesIO(response.content)
+        pil_image = Image.open(image_bytes).convert("RGB")
+        width, height = pil_image.size
+        
+        image_array = np.array(pil_image).astype(np.float32) / 255.0
+        image_tensor = torch.from_numpy(image_array).unsqueeze(0)
+        
+        return image_tensor, width, height
 
 
 class FalImage2VideoRequestNode(BaseFalNode):
@@ -509,14 +525,160 @@ class FalFunControlVideoRequestNode(BaseFalNode):
             raise e
 
 
+class QwenEditPlusLoraNode(BaseFalNode):
+    """FAL Qwen Image Edit Plus LoRA 节点"""
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE", {"tooltip": "Input image (first, required)"}),
+                "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "Prompt for image generation"}),
+                "model": ("STRING", {"default": "fal-ai/qwen-image-edit-plus-lora", "tooltip": "FAL model name"}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": "", "tooltip": "FAL API key"}),
+                "image_2": ("IMAGE", {"tooltip": "Input image (second, optional)"}),
+                "image_3": ("IMAGE", {"tooltip": "Input image (third, optional)"}),
+                "image_4": ("IMAGE", {"tooltip": "Input image (fourth, optional)"}),
+                "image_size": (["auto", "square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9", "custom"], {"default": "auto", "tooltip": "Image size"}),
+                "custom_width": ("INT", {"default": 1280, "min": 1, "max": 4096, "tooltip": "Custom width (used when image_size is custom)"}),
+                "custom_height": ("INT", {"default": 720, "min": 1, "max": 4096, "tooltip": "Custom height (used when image_size is custom)"}),
+                "num_inference_steps": ("INT", {"default": 28, "min": 1, "max": 100, "tooltip": "Number of inference steps"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "Random seed"}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 20.0, "step": 0.1, "tooltip": "Guidance scale"}),
+                "num_images": ("INT", {"default": 1, "min": 1, "max": 10, "tooltip": "Number of images to generate"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False, "tooltip": "Enable safety checker"}),
+                "output_format": (["jpeg", "png"], {"default": "png", "tooltip": "Output format"}),
+                "negative_prompt": ("STRING", {"default": " ", "multiline": True, "tooltip": "Negative prompt"}),
+                "acceleration": (["none", "regular"], {"default": "regular", "tooltip": "Acceleration mode"}),
+                "lora1_url": ("STRING", {"default": "", "tooltip": "LoRA 1 URL"}),
+                "lora1_weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "LoRA 1 weight"}),
+                "lora2_url": ("STRING", {"default": "", "tooltip": "LoRA 2 URL"}),
+                "lora2_weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "LoRA 2 weight"}),
+                "lora3_url": ("STRING", {"default": "", "tooltip": "LoRA 3 URL"}),
+                "lora3_weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "LoRA 3 weight"}),
+                "timeout": ("INT", {"default": 300, "min": 1, "max": 3000, "tooltip": "Timeout in seconds"}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "INT", "INT")
+    RETURN_NAMES = ("image", "width", "height")
+    FUNCTION = "generate_image"
+    CATEGORY = "utils/image"
+
+    def generate_image(self, image, prompt, model, api_key="", image_2=None, image_3=None, image_4=None,
+                      image_size="auto", custom_width=1280, custom_height=720, num_inference_steps=28, seed=0,
+                      guidance_scale=4.0, num_images=1, enable_safety_checker=False,
+                      output_format="png", negative_prompt=" ", acceleration="regular",
+                      lora1_url="", lora1_weight=1.0, lora2_url="", lora2_weight=1.0,
+                      lora3_url="", lora3_weight=1.0, timeout=300):
+        
+        if api_key.strip():
+            self.api_key = api_key
+            save_fal_config({"FAL_KEY": self.api_key})
+            self.configure_fal()
+
+        if not self.api_key:
+            raise ValueError("API key not found in fal_config.yml or node input")
+
+        try:
+            url_list = []
+            
+            image_url = self._upload_image(image)
+            url_list.append(image_url)
+            
+            if image_2 is not None and len(image_2) > 0:
+                image2_url = self._upload_image(image_2)
+                url_list.append(image2_url)
+            
+            if image_3 is not None and len(image_3) > 0:
+                image3_url = self._upload_image(image_3)
+                url_list.append(image3_url)
+            
+            if image_4 is not None and len(image_4) > 0:
+                image4_url = self._upload_image(image_4)
+                url_list.append(image4_url)
+
+            arguments = {
+                "prompt": prompt,
+                "image_urls": url_list,
+                "num_inference_steps": num_inference_steps,
+                "guidance_scale": guidance_scale,
+                "sync_mode": False,
+                "num_images": num_images,
+                "enable_safety_checker": enable_safety_checker,
+                "output_format": output_format,
+                "negative_prompt": negative_prompt,
+                "acceleration": acceleration
+            }
+
+            if seed > 0:
+                arguments["seed"] = seed
+
+            if image_size == "custom":
+                arguments["image_size"] = {
+                    "width": custom_width,
+                    "height": custom_height
+                }
+            elif image_size != "auto":
+                arguments["image_size"] = image_size
+
+            lora_list = []
+            if lora1_url.strip():
+                lora_list.append({"path": lora1_url.strip(), "scale": lora1_weight})
+            if lora2_url.strip():
+                lora_list.append({"path": lora2_url.strip(), "scale": lora2_weight})
+            if lora3_url.strip():
+                lora_list.append({"path": lora3_url.strip(), "scale": lora3_weight})
+            
+            if lora_list:
+                arguments["loras"] = lora_list
+
+            logger.debug(f"调用FAL API，参数: {arguments}")
+
+            result = self._call_fal_api(model, arguments, timeout)
+            logger.info(f"FAL API调用成功，输出: {result}")
+            
+            if not result.get("images") or len(result["images"]) == 0:
+                raise ValueError("FAL API返回结果中没有图片")
+
+            first_image = result["images"][0]
+            image_url = first_image["url"]
+            width = first_image.get("width", 0)
+            height = first_image.get("height", 0)
+            
+            logger.debug(f"生成的图片URL: {image_url}, 尺寸: {width}x{height}")
+
+            image_tensor, actual_width, actual_height = self._download_and_convert_image(image_url)
+            
+            if width == 0 or height == 0:
+                width, height = actual_width, actual_height
+
+            if num_images > 1:
+                image_tensors = [image_tensor]
+                for img in result["images"][1:num_images]:
+                    img_tensor, _, _ = self._download_and_convert_image(img["url"])
+                    image_tensors.append(img_tensor)
+                image_tensor = torch.cat(image_tensors, dim=0)
+
+            return (image_tensor, width, height)
+
+        except Exception as e:
+            logger.exception(f"FAL图片编辑失败: {str(e)}")
+            raise e
+
+
 NODE_CLASS_MAPPINGS = {
     "FalImage2VideoRequestNode": FalImage2VideoRequestNode,
     "FalVideo2VideoRequestNode": FalVideo2VideoRequestNode,
     "FalFunControlVideoRequestNode": FalFunControlVideoRequestNode,
+    "QwenEditPlusLoraNode": QwenEditPlusLoraNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "FalImage2VideoRequestNode": "FAL Image2Video Request",
     "FalVideo2VideoRequestNode": "FAL Video2Video Request",
     "FalFunControlVideoRequestNode": "FAL Fun Control Video Request",
+    "QwenEditPlusLoraNode": "FAL Qwen Edit Plus LoRA",
 }

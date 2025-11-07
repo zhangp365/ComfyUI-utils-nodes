@@ -184,12 +184,23 @@ This node is designed to generate videos using Novita's API. It supports image-t
 
 ## FalImage2VideoRequestNode
 This node is designed to generate videos from images using FAL's API. It provides high-quality video generation with various customization options.
+To use this node, you need to get your FAL API key:
+   - Visit [fal.ai](https://fal.ai/)
+   - Log in with your account
+   - Go to API keys settings
+   - Create a new API key
+   - Copy the API key for use in the node's input or fal_config.yml
+
 
 ## FalVideo2VideoRequestNode
 This node is designed to use the fal-ai/wan-22-vace-fun-a14b/pose model. When you input a pose video and an image, it will generate an action video based on the pose sequence.
 
 ## FalFunControlVideoRequestNode
 This node is designed to use the fal-ai/wan-fun-control model. It can input pose or depth videos along with a reference frame, then generate the resulting video based on the control input.
+
+## QwenEditPlusLoraNode
+This node is designed to edit images using FAL's qwen-image-edit-plus-lora model. It supports uploading multiple images (first image is required, up to 3 additional images are optional) and applying up to 3 LoRAs with custom weights. The node automatically handles image uploads to FAL and returns the edited image with dimensions.
+
 
 ## SegmindVideoRequestNode
 This node is designed to generate videos from image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.
