@@ -50,6 +50,9 @@ use this node, must get your free API key from Volcano engine:
 ## VolcanoImageEdit
 This node is designed to edit the input image using the Volcano engine.
 
+## VolcanoArkImageEdit
+This node is designed to edit images using the vocalno Ark API, supporting multiple input images and various image sizes and aspect ratios.
+
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
