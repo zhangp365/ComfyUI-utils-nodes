@@ -2,11 +2,14 @@
 from urllib.parse import urlparse, parse_qs, unquote
 import requests
 import os
+import yaml
 from tqdm import tqdm
 import folder_paths
 from comfy.comfy_types import IO
 import logging
 logger = logging.getLogger(__name__)
+
+config_dir = os.path.join(folder_paths.base_path, "config")
 
 
 class ModelsDownloaderOfUtils:
@@ -21,6 +24,9 @@ class ModelsDownloaderOfUtils:
                 "subdirectory": ("STRING", {"default": "loras"}),
                 "proxy": ("STRING", {"default": ""}),
                 "timeout": ("INT", {"default": 300, "min": 1, "max": 3600}),
+            },
+            "optional": {
+                "civitai_api_key": ("STRING", {"default": ""}),
             }
         }
 
@@ -59,10 +65,32 @@ class ModelsDownloaderOfUtils:
         
         return filename
 
-    def download_file(self, url, filepath, proxy, timeout):
+    def load_civitai_config(self):
+        config_path = os.path.join(config_dir, 'civitai_config.yml')
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+            return config.get("API_KEY", "")
+        except FileNotFoundError:
+            return ""
+
+    def save_civitai_config(self, api_key):
+        config_path = os.path.join(config_dir, 'civitai_config.yml')
+        os.makedirs(config_dir, exist_ok=True)
+        config = {"API_KEY": api_key}
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(config, f, indent=4)
+
+    def download_file(self, url, filepath, proxy, timeout, civitai_api_key=None):
         proxies = {"http": proxy, "https": proxy} if proxy and proxy.strip() else None
         
-        response = requests.get(url, proxies=proxies, timeout=timeout, stream=True)
+        headers = {}
+        if "civitai" in url.lower():
+            api_key = civitai_api_key if civitai_api_key else self.load_civitai_config()
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+        
+        response = requests.get(url, proxies=proxies, timeout=timeout, stream=True, headers=headers)
         response.raise_for_status()
         
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -76,7 +104,10 @@ class ModelsDownloaderOfUtils:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-    def download_models(self, url_0, url_1, url_2, url_3, subdirectory, proxy, timeout):
+    def download_models(self, url_0, url_1, url_2, url_3, subdirectory, proxy, timeout, civitai_api_key=""):
+        if civitai_api_key:
+            self.save_civitai_config(civitai_api_key)
+        
         urls = [url_0, url_1, url_2, url_3]
         model_names = []
         
@@ -109,7 +140,7 @@ class ModelsDownloaderOfUtils:
                 continue
             
             try:
-                self.download_file(url, filepath, proxy, timeout)
+                self.download_file(url, filepath, proxy, timeout, civitai_api_key if civitai_api_key else None)
             except Exception as e:
                 logger.error(f"Error downloading {url} to {filepath}: {e}")
                 if os.path.exists(filepath):
