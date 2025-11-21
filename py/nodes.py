@@ -951,8 +951,63 @@ class IntMultipleAddLiteral:
 
 MAX_RESOLUTION = 16384
 
+try:
+    from comfy_api.internal import _ComfyNodeInternal
+    from comfy_api.latest import _io as IO
+    from dataclasses import replace
+    _HAS_V3_SUPPORT = True
+except ImportError:
+    _HAS_V3_SUPPORT = False
+    _ComfyNodeInternal = None
+    IO = None
+    replace = None
+
+def _is_parent_v3():
+    try:
+        is_v3 = _HAS_V3_SUPPORT and issubclass(ImageCompositeMasked, _ComfyNodeInternal)
+        if _HAS_V3_SUPPORT:
+            logger.info(f"ImageCompositeMaskedWithSwitch: 检测父节点类型 - V3支持={_HAS_V3_SUPPORT}, 父节点是V3={is_v3}")
+        return is_v3
+    except (TypeError, AttributeError) as e:
+        logger.warning(f"ImageCompositeMaskedWithSwitch: 检测父节点类型时出错 - {e}")
+        return False
+
+_IS_PARENT_V3 = _is_parent_v3()
+if _IS_PARENT_V3:
+    logger.info("ImageCompositeMaskedWithSwitch: 使用 V3 Schema 模式")
+else:
+    logger.info("ImageCompositeMaskedWithSwitch: 使用 V1 INPUT_TYPES 模式")
 
 class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
+    if _IS_PARENT_V3:
+        @classmethod
+        def define_schema(cls):
+            logger.debug("ImageCompositeMaskedWithSwitch: 调用 define_schema (V3模式)")
+            parent_schema = super().define_schema()
+            parent_inputs = list(parent_schema.inputs) if parent_schema.inputs else []
+            parent_inputs.extend([
+                IO.Boolean.Input("enabled", default=True),
+                IO.Boolean.Input("invert_mask", default=False),
+            ])
+            logger.debug(f"ImageCompositeMaskedWithSwitch: Schema定义完成，共{len(parent_inputs)}个输入")
+            return replace(
+                parent_schema,
+                node_id="ImageCompositeMaskedWithSwitch",
+                category="utils/image",
+                inputs=parent_inputs,
+            )
+
+        @classmethod
+        def execute(cls, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
+            logger.debug(f"ImageCompositeMaskedWithSwitch: 执行 execute (V3模式) - enabled={enabled}, invert_mask={invert_mask}")
+            if not enabled:
+                logger.debug("ImageCompositeMaskedWithSwitch: enabled=False, 直接返回destination")
+                return IO.NodeOutput(destination)
+            if invert_mask and mask is not None:
+                logger.debug("ImageCompositeMaskedWithSwitch: 反转mask")
+                mask = 1.0 - mask
+            return super().execute(destination, source, x, y, resize_source, mask)
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -975,9 +1030,12 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
     CATEGORY = "utils/image"
 
     def composite_with_switch(self, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
+        logger.debug(f"ImageCompositeMaskedWithSwitch: 执行 composite_with_switch (V1模式) - enabled={enabled}, invert_mask={invert_mask}")
         if not enabled:
+            logger.debug("ImageCompositeMaskedWithSwitch: enabled=False, 直接返回destination")
             return (destination, )
         if invert_mask:
+            logger.debug("ImageCompositeMaskedWithSwitch: 反转mask")
             mask = 1.0 - mask
         return self.composite(destination, source, x, y, resize_source, mask)
 
