@@ -71,7 +71,7 @@ class ColorCorrectOfUtils:
         brightness /= 100
         contrast /= 100
         saturation /= 100
-        temperature /= 100
+        temperature /= -100
         red /= 100
         green /= 100
         blue /= 100
@@ -97,6 +97,7 @@ class ColorCorrectOfUtils:
                 modified_image[:, :, 0] *= 1 + temperature
                 modified_image[:, :, 1] *= 1 + temperature * 0.4
             elif temperature < 0:
+                modified_image[:, :, 0] *= 1 + temperature * 0.2
                 modified_image[:, :, 2] *= 1 - temperature
             
             # red
