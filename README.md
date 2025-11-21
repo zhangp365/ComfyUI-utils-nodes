@@ -16,7 +16,7 @@ When there are a lot of images in the input directory, loading image as Mask wit
 Modified the official ImageCompositeMasked node by adding a switch. When turned off, it will return the destination image directly.
 
 ## ImageCompositeMaskedOneByOne
-Modified the official ImageCompositeMasked node to process images one by one, instead of processing an entire batch at once. In video scenarios, processing in a batch may requires a significant amount of memory, but this method helps reduce memory usage.
+Modified the official ImageCompositeMasked node to process images one by one, instead of processing an entire batch at once. In video scenarios, processing in a batch may require a significant amount of memory, but this method helps reduce memory usage.
 
 ## ImageBatchOneOrMore
 This node can input one or more images, the limit is six. It expands the functionality of the official ImageBatch node from two to multiple images.
@@ -27,21 +27,21 @@ This node, ImageConcatenateOfUtils, is an extension of the original [ImageConcat
 
 ### Features
 - **Upscale**: This extension adds the capability to upscale images.
-- **Check**: Additional functionality for cheching the second image empty or not.
+- **Check**: Additional functionality for checking the second image empty or not.
 
 ### Original node
 The original ImageConcatenate node can be found [here](https://github.com/kijai/ComfyUI-KJNodes).
 Special thanks to @kijai for their contribution to the initial version.
 
 ## ColorCorrectOfUtils
-This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](https://github.com/EllangoK/ComfyUI-post-processing-nodes/blob/master/post_processing/color_correct.py) node developed by @EllangoK. Added the chanels of red, green, and blue adjustment functionalities.
+This node, ColorCorrectOfUtils, is an extension of the original [ColorCorrect](https://github.com/EllangoK/ComfyUI-post-processing-nodes/blob/master/post_processing/color_correct.py) node developed by @EllangoK. Added the channels of red, green, and blue adjustment functionalities.
 
 ## ImagesConcanateToGrid
 This node is designed to concatenate the input one batch images to a grid. It can concatenate images in the horizontal or vertical direction.
 
 ## VolcanoOutpainting
 This node is designed to outpaint the input image using the Volcano engine. 
-use this node, must get your free API key from Volcano engine:
+To use this node, you must get your free API key from Volcano engine:
    - Visit [Volcano engine](https://console.volcengine.com/)
    - Log in with your Volcano engine account
    - Click on "访问控制" or go to [settings](https://console.volcengine.com/iam/keymanage)
@@ -51,15 +51,15 @@ use this node, must get your free API key from Volcano engine:
 This node is designed to edit the input image using the Volcano engine.
 
 ## VolcanoArkImageEdit
-This node is designed to edit images using the vocalno Ark API, supporting multiple input images and various image sizes and aspect ratios.
+This node is designed to edit images using the volcano Ark API, supporting multiple input images and various image sizes and aspect ratios.
 
 ## ModifyTextGender
 This node adjusts the text to describe the gender based on the input. If the gender input is 'M', the text will be adjusted to describe as male; if the gender input is 'F', it will be adjusted to describe as female.
 
 ## GeminiPromptEnhance
-This node is designed to enhance the text description of the image, using the latest Gemini 2.0 flash model. It can add quality descriptors, lighting descriptions, scene descriptions, and skin descriptions to the text. and according to the gender input, can modifiy the content about gender.
+This node is designed to enhance the text description of the image, using the latest Gemini 2.0 flash model. It can add quality descriptors, lighting descriptions, scene descriptions, and skin descriptions to the text. and according to the gender input, can modify the content about gender.
 
-use this node, must get your free API key from Google AI Studio:
+To use this node, you must get your free API key from Google AI Studio:
    - Visit [Google AI Studio](https://aistudio.google.com/prompts/new_chat)
    - Log in with your Google account
    - Click on "Get API key" or go to settings
@@ -208,7 +208,7 @@ This node is designed to edit images using FAL's qwen-image-edit-plus-lora model
 This node is designed to edit images using FAL's nano-banana models. It supports two models: fal-ai/nano-banana/edit and fal-ai/nano-banana-pro/edit. The node supports uploading up to 4 images or providing image URLs, and can generate multiple images with various aspect ratios, resolutions, and output formats.
 
 ## SegmindVideoRequestNode
-This node is designed to generate videos from image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.
+This node is designed to generate videos from an image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.
 
 ## ModelsDownloaderOfUtils
 This node downloads models or LoRAs to a subdirectory. If the model already exists, it simply returns the model name in the corresponding location.
