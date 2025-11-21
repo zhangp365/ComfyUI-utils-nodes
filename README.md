@@ -204,6 +204,8 @@ This node is designed to use the fal-ai/wan-fun-control model. It can input pose
 ## QwenEditPlusLoraNode
 This node is designed to edit images using FAL's qwen-image-edit-plus-lora model. It supports uploading multiple images (first image is required, up to 3 additional images are optional) and applying up to 3 LoRAs with custom weights. The node automatically handles image uploads to FAL and returns the edited image with dimensions.
 
+## FalNanoBananaNode
+This node is designed to edit images using FAL's nano-banana models. It supports two models: fal-ai/nano-banana/edit and fal-ai/nano-banana-pro/edit. The node supports uploading up to 4 images or providing image URLs, and can generate multiple images with various aspect ratios, resolutions, and output formats.
 
 ## SegmindVideoRequestNode
 This node is designed to generate videos from image using Segmind's API. The default model is the wan-2.2-i2v-fast. The image must be a url. It supports fast video generation with various resolution and aspect ratio options.

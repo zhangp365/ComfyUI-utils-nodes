@@ -669,11 +669,120 @@ class QwenEditPlusLoraNode(BaseFalNode):
             raise e
 
 
+class FalNanoBananaNode(BaseFalNode):
+    """FAL Nano Banana 图像编辑节点"""
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "图像编辑提示词"}),
+                "model": (["fal-ai/nano-banana/edit", "fal-ai/nano-banana-pro/edit"], {"default": "fal-ai/nano-banana/edit", "tooltip": "FAL模型名称"}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": "", "tooltip": "FAL API密钥"}),
+                "image": ("IMAGE", {"tooltip": "输入图像"}),
+                "image_2": ("IMAGE", {"tooltip": "输入图像2"}),
+                "image_3": ("IMAGE", {"tooltip": "输入图像3"}),
+                "image_4": ("IMAGE", {"tooltip": "输入图像4"}),
+                "image_urls": ("STRING", {"default": "", "multiline": True, "tooltip": "图像URL列表，每行一个"}),
+                "num_images": ("INT", {"default": 1, "min": 1, "max": 10, "tooltip": "生成图像数量"}),
+                "aspect_ratio": (["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"], {"default": "auto", "tooltip": "宽高比"}),
+                "output_format": (["jpeg", "png", "webp"], {"default": "png", "tooltip": "输出格式"}),
+                "resolution": (["1K", "2K", "4K"], {"default": "1K", "tooltip": "分辨率"}),
+                "sync_mode": ("BOOLEAN", {"default": False, "tooltip": "同步模式"}),
+                "timeout": ("INT", {"default": 300, "min": 1, "max": 3000, "tooltip": "超时时间(秒)"}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "INT", "INT", "STRING")
+    RETURN_NAMES = ("image", "width", "height", "description")
+    FUNCTION = "generate_image"
+    CATEGORY = "utils/image"
+
+    def generate_image(self, prompt, model, api_key="", image=None, image_2=None, image_3=None, image_4=None,
+                      image_urls="", num_images=1, aspect_ratio="auto", output_format="png",
+                      resolution="1K", sync_mode=False, timeout=300):
+        
+        if api_key.strip():
+            self.api_key = api_key
+            save_fal_config({"FAL_KEY": self.api_key})
+            self.configure_fal()
+
+        if not self.api_key:
+            raise ValueError("API key not found in fal_config.yml or node input")
+
+        try:
+            url_list = []
+            
+            if image is not None and len(image) > 0:
+                image_url = self._upload_image(image)
+                url_list.append(image_url)
+            
+            if image_2 is not None and len(image_2) > 0:
+                image2_url = self._upload_image(image_2)
+                url_list.append(image2_url)
+            
+            if image_3 is not None and len(image_3) > 0:
+                image3_url = self._upload_image(image_3)
+                url_list.append(image3_url)
+            
+            if image_4 is not None and len(image_4) > 0:
+                image4_url = self._upload_image(image_4)
+                url_list.append(image4_url)
+
+            if image_urls.strip():
+                additional_urls = [url.strip() for url in image_urls.split('\n') if url.strip()]
+                url_list.extend(additional_urls)
+
+            arguments = {
+                "prompt": prompt,
+                "num_images": num_images,
+                "aspect_ratio": aspect_ratio,
+                "output_format": output_format,
+                "sync_mode": sync_mode,
+                "resolution": resolution
+            }
+
+            if url_list:
+                arguments["image_urls"] = url_list
+
+            logger.debug(f"调用FAL API，参数: {arguments}")
+
+            result = self._call_fal_api(model, arguments, timeout)
+            logger.info(f"FAL API调用成功，输出: {result}")
+            
+            if not result.get("images") or len(result["images"]) == 0:
+                raise ValueError("FAL API返回结果中没有图片")
+
+            first_image = result["images"][0]
+            image_url = first_image["url"]
+            description = result.get("description", "")
+            
+            logger.debug(f"生成的图片URL: {image_url}")
+
+            image_tensor, width, height = self._download_and_convert_image(image_url)
+
+            if num_images > 1:
+                image_tensors = [image_tensor]
+                for img in result["images"][1:num_images]:
+                    img_tensor, _, _ = self._download_and_convert_image(img["url"])
+                    image_tensors.append(img_tensor)
+                image_tensor = torch.cat(image_tensors, dim=0)
+
+            return (image_tensor, width, height, description)
+
+        except Exception as e:
+            logger.exception(f"FAL Nano Banana图片编辑失败: {str(e)}")
+            raise e
+
+
 NODE_CLASS_MAPPINGS = {
     "FalImage2VideoRequestNode": FalImage2VideoRequestNode,
     "FalVideo2VideoRequestNode": FalVideo2VideoRequestNode,
     "FalFunControlVideoRequestNode": FalFunControlVideoRequestNode,
     "QwenEditPlusLoraNode": QwenEditPlusLoraNode,
+    "FalNanoBananaNode": FalNanoBananaNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -681,4 +790,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FalVideo2VideoRequestNode": "FAL Video2Video Request",
     "FalFunControlVideoRequestNode": "FAL Fun Control Video Request",
     "QwenEditPlusLoraNode": "FAL Qwen Edit Plus LoRA",
+    "FalNanoBananaNode": "FAL Nano Banana",
 }
