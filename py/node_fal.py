@@ -17,6 +17,8 @@ sys.path.append(".")
 from comfy_api.latest._input_impl.video_types import VideoFromFile
 from comfy.comfy_types import IO, FileLocator, ComfyNodeABC
 from .utils import tensor2pil, np2tensor
+import threading
+import queue
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +56,18 @@ class ComfyUIFalRun:
         start_time = time.time()
 
         try:
-            logger.info(f"请求fal.ai, 调用模型: {model}")
-            
-            # 使用线程来运行FAL请求，以便可以检查中断
-            import threading
-            import queue
+            logger.info(f"请求fal.ai, 调用模型: {model}")          
             
             result_queue = queue.Queue()
             exception_queue = queue.Queue()
+            interrupt_event = threading.Event()
+            
+            def interrupt_aware_queue_update(update):
+                if interrupt_event.is_set() or comfy.model_management.processing_interrupted():
+                    interrupt_event.set()
+                    raise comfy.model_management.InterruptProcessingException("ComfyUI interrupted")
+                if on_queue_update:
+                    on_queue_update(update)
             
             def run_fal():
                 try:
@@ -69,40 +75,43 @@ class ComfyUIFalRun:
                         model,
                         arguments=arguments,
                         with_logs=True,
-                        on_queue_update=on_queue_update,
+                        on_queue_update=interrupt_aware_queue_update,
                     )
-                    result_queue.put(result)
-                except Exception as e:
+                    if not interrupt_event.is_set():
+                        result_queue.put(result)
+                except comfy.model_management.InterruptProcessingException as e:
                     exception_queue.put(e)
+                except Exception as e:
+                    if not interrupt_event.is_set():
+                        exception_queue.put(e)
             
-            # 启动FAL请求线程
             fal_thread = threading.Thread(target=run_fal)
             fal_thread.daemon = True
             fal_thread.start()
             
-            # 轮询检查中断和超时
             while fal_thread.is_alive():
-                # 检查超时
                 if time.time() - start_time > self.timeout_seconds:
+                    interrupt_event.set()
                     raise Exception(f"timeout ({self.timeout_seconds} seconds)")
 
-                # 检查ComfyUI中断信号
                 if comfy.model_management.processing_interrupted():
-                    raise comfy.model_management.InterruptProcessingException(
-                        "ComfyUI interrupted")
+                    interrupt_event.set()
+                    logger.warning("检测到中断信号，正在中止FAL请求")
+                    raise comfy.model_management.InterruptProcessingException("ComfyUI interrupted")
                 
                 time.sleep(self.check_interval)
             
-            # 检查是否有异常
             if not exception_queue.empty():
                 raise exception_queue.get()
             
-            # 获取结果
             if not result_queue.empty():
                 return result_queue.get()
             else:
                 raise Exception("FAL request failed to return result")
 
+        except comfy.model_management.InterruptProcessingException:
+            logger.warning("FAL请求被中断")
+            raise
         except Exception as e:
             logging.error(f"FAL operation failed: {e}")
             raise
