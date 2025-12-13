@@ -1007,37 +1007,37 @@ class ImageCompositeMaskedWithSwitch(ImageCompositeMasked):
                 logger.debug("ImageCompositeMaskedWithSwitch: 反转mask")
                 mask = 1.0 - mask
             return super().execute(destination, source, x, y, resize_source, mask)
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "destination": ("IMAGE",),
-                "source": ("IMAGE",),
-                "x": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
-                "y": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
-                "resize_source": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "mask": ("MASK",),
-                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-                "invert_mask": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+    else:
+        @classmethod
+        def INPUT_TYPES(s):
+            return {
+                "required": {
+                    "destination": ("IMAGE",),
+                    "source": ("IMAGE",),
+                    "x": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
+                    "y": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
+                    "resize_source": ("BOOLEAN", {"default": False}),
+                },
+                "optional": {
+                    "mask": ("MASK",),
+                    "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+                    "invert_mask": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+                }
             }
-        }
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "composite_with_switch"
+        RETURN_TYPES = ("IMAGE",)
+        FUNCTION = "composite_with_switch"
 
-    CATEGORY = "utils/image"
+        CATEGORY = "utils/image"
 
-    def composite_with_switch(self, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
-        logger.debug(f"ImageCompositeMaskedWithSwitch: 执行 composite_with_switch (V1模式) - enabled={enabled}, invert_mask={invert_mask}")
-        if not enabled:
-            logger.debug("ImageCompositeMaskedWithSwitch: enabled=False, 直接返回destination")
-            return (destination, )
-        if invert_mask:
-            logger.debug("ImageCompositeMaskedWithSwitch: 反转mask")
-            mask = 1.0 - mask
-        return self.composite(destination, source, x, y, resize_source, mask)
+        def composite_with_switch(self, destination, source, x, y, resize_source, mask=None, enabled=True, invert_mask=False):
+            logger.debug(f"ImageCompositeMaskedWithSwitch: 执行 composite_with_switch (V1模式) - enabled={enabled}, invert_mask={invert_mask}")
+            if not enabled:
+                logger.debug("ImageCompositeMaskedWithSwitch: enabled=False, 直接返回destination")
+                return (destination, )
+            if invert_mask:
+                logger.debug("ImageCompositeMaskedWithSwitch: 反转mask")
+                mask = 1.0 - mask
+            return self.composite(destination, source, x, y, resize_source, mask)
 
 
 class CheckpointLoaderSimpleWithSwitch:
