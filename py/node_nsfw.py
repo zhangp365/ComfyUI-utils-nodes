@@ -72,13 +72,15 @@ class DetectorForNSFW:
 
         if alternative_image is not None:
             alternative_image = tensor2np(alternative_image)
+            if not isinstance(alternative_image, List):
+                alternative_image = [alternative_image]
         
         images = tensor2np(image)
         if not isinstance(images, List):
             images = [images]
 
         results, result_info, filtered_results = [],[],[]
-        for img in images:
+        for i, img in enumerate(images):
             detect_result = self.model.detect(img)
             
             logger.debug(f"nudenet detect result:{detect_result}")
@@ -95,7 +97,10 @@ class DetectorForNSFW:
                 info["nsfw"] = False
                 filtered_results.append(img)
             else:
-                placeholder_image = alternative_image if alternative_image is not None else np.ones_like(img) * 255
+                if alternative_image is not None:
+                    placeholder_image = alternative_image[i] if len(alternative_image) == len(images) else alternative_image[0]
+                else:
+                    placeholder_image = np.ones_like(img) * 255
                 results.append(placeholder_image)
                 info["nsfw"] = True
 
