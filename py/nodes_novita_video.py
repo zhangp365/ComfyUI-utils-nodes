@@ -93,7 +93,7 @@ class NovitaVideoRequestNode:
             "required": {
                 "model": ("STRING", {"default": "wan-2.2-i2v"}),
                 "prompt": ("STRING", {"default": "A small cat running on the grass", "multiline": True}),
-                "img_url": ("STRING", {"default": ""}),
+                "img_url": ("STRING", {"default": "", "multiline": True}),
                 "resolution": (["480P", "720P", "1080P"], {"default": "720P"}),
                 "duration": ("INT", {"default": 5, "min": 5, "max": 8}),
                 "prompt_extend": ("BOOLEAN", {"default": True}),

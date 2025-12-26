@@ -362,7 +362,7 @@ class VolcanoArkImageEditNode(ArkBaseNode):
                 "image2": ("IMAGE",),
                 "image3": ("IMAGE",),
                 "api_key": ("STRING", {"default": ""}),
-                "api_url": ("STRING", {"default": ""}),
+                "api_url": ("STRING", {"default": "", "multiline": True}),
                 "model": ("STRING", {"default": ""})
             }
         }
