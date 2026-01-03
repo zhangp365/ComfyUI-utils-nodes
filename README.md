@@ -170,6 +170,8 @@ Upon the first run, the node will download the [deepface](https://github.com/ser
 
 > Please set the environment variable `TF_USE_LEGACY_KERAS` to `1`, then restart ComfyUI.
 
+> Caution: If you are not using this node, please remove the dependencies in requirements.txt. Otherwise, it will install TensorFlow version 2.17.x.
+
 ## EmptyConditioning
 This node is designed to return an empty conditioning, the size is zero. It can be used to replace the conditioning when the conditioning is not actually needed.
 

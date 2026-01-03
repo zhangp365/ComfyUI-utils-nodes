@@ -4,7 +4,7 @@
 # DetectorForNSFW 
 onnxruntime>=1.19.2
 
-# DeepfaceAnalyzeFaceAttributes
+# DeepfaceAnalyzeFaceAttributes: If you are not using this node, please remove the dependencies below. Otherwise, keep the specified versions as changing them may cause the node to malfunction.
 deepface==0.0.93
 ultralytics
 tf-keras==2.17.0
