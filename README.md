@@ -116,6 +116,9 @@ Check the component and alternative input. If the component input is not empty, 
 ## MatchImageRatioToPreset
 According to the input image ratio, decide which standard SDXL training size is the closest match. This is useful for subsequent image resizing and other processes.
 
+## AspectRatioSizeNodeOfUtils
+Select aspect ratio (1:1, 9:16, 16:9, 3:4, etc.) and size preset (1k, 2k, 4k) to output corresponding width and height values. Supports "auto" mode to pass through input dimensions directly. Includes divisibility option (none/8/16) to ensure output values are aligned, and batch_size pass-through.
+
 ## UpscaleImageWithModelIfNeed
 Enhanced the official UpscaleImageWithModel node by adding a judge. If the input image area exceeds a predefined threshold, upscaling is bypassed. The threshold is a percentage of the SDXL standard size (1024x1024) area.
 

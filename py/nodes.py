@@ -35,6 +35,35 @@ sys.path.insert(0, os.path.join(
 
 logger = logging.getLogger(__file__)
 
+RESOLUTION_PRESETS_1K = [
+    (704, 1408), (704, 1344), (768, 1344), (768, 1280), (832, 1216), (832, 1152),
+    (896, 1152), (896, 1088), (960, 1088), (960, 1024), (1024, 1024), (1024, 960),
+    (1088, 960), (1088, 896), (1152, 896), (1152, 832), (1216, 832), (1280, 768),
+    (1344, 768), (1344, 704), (1408, 704), (1472, 704), (1536, 640), (1600, 640),
+    (1664, 576), (1728, 576)
+]
+
+ASPECT_RATIO_RESOLUTIONS = {
+    "1:1": (1024, 1024),
+    "1:2": (704, 1408),
+    "3:5": (768, 1280),
+    "5:3": (1280, 768),
+    "2:1": (1408, 704),
+    "3:1": (1728, 576),
+    "1:3": (576, 1728),
+    "9:16": (768, 1344),
+    "16:9": (1344, 768),
+    "3:4": (896, 1152),
+    "4:3": (1152, 896),
+    "2:3": (832, 1216),
+    "3:2": (1216, 832),
+    "9:21": (640, 1536),
+    "21:9": (1536, 640),
+}
+
+SIZE_MULTIPLIERS = {"1k": 1.0, "2k": 2.0, "4k": 4.0}
+
+
 
 class LoadImageWithSwitch(LoadImage):
     @classmethod
@@ -1354,19 +1383,52 @@ class TextInputAutoSelector:
         return (selected_input,)
 
 
+class AspectRatioSizeNodeOfUtils:
+    @classmethod
+    def INPUT_TYPES(cls):
+        aspect_options = list(ASPECT_RATIO_RESOLUTIONS.keys()) + ["auto"]
+        return {
+            "required": {
+                "aspect_ratio": (aspect_options,),
+                "size": (list(SIZE_MULTIPLIERS.keys()),),
+                "divisible_by": (["none", "8", "16"],),
+                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4096, "step": 1}),
+            },
+            "optional": {
+                "input_width": ("INT", {"default": 1024, "min": 1, "max": 8192, "step": 1}),
+                "input_height": ("INT", {"default": 1024, "min": 1, "max": 8192, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("INT", "INT", "INT")
+    RETURN_NAMES = ("width", "height", "batch_size")
+    FUNCTION = "calculate_size"
+    CATEGORY = "utils/numbers"
+
+    def calculate_size(self, aspect_ratio, size, divisible_by, batch_size, input_width=1024, input_height=1024):
+        if aspect_ratio == "auto":
+            width, height = input_width, input_height
+        else:
+            base_w, base_h = ASPECT_RATIO_RESOLUTIONS[aspect_ratio]
+            multiplier = SIZE_MULTIPLIERS[size]
+            width, height = int(base_w * multiplier), int(base_h * multiplier)
+
+        width, height = self._apply_divisibility(width, height, divisible_by)
+        return (width, height, batch_size)
+
+    def _apply_divisibility(self, width, height, divisible_by):
+        if divisible_by == "none":
+            return width, height
+        divisor = int(divisible_by)
+        width = (width // divisor) * divisor
+        height = (height // divisor) * divisor
+        return max(divisor, width), max(divisor, height)
+
+
+
 class MatchImageRatioToPreset:
     def __init__(self):
-        self.presets = [
-            (704, 1408), (704, 1344), (768, 1344), (768,
-                                                    1280), (832, 1216), (832, 1152),
-            (896, 1152), (896, 1088), (960, 1088), (960,
-                                                    1024), (1024, 1024), (1024, 960),
-            (1088, 960), (1088, 896), (1152,
-                                       896), (1152, 832), (1216, 832), (1280, 768),
-            (1344, 768), (1344, 704), (1408,
-                                       704), (1472, 704), (1536, 640), (1600, 640),
-            (1664, 576), (1728, 576)
-        ]
+        self.presets = RESOLUTION_PRESETS_1K
 
     @classmethod
     def INPUT_TYPES(s):
@@ -1516,6 +1578,7 @@ NODE_CLASS_MAPPINGS = {
     "BooleanControlOutput": BooleanControlOutput,
 
     # numbers
+    "AspectRatioSizeNodeOfUtils": AspectRatioSizeNodeOfUtils,
     "MatchImageRatioToPreset": MatchImageRatioToPreset,
     "FloatMultipleAddLiteral": FloatMultipleAddLiteral,
     "IntMultipleAddLiteral": IntMultipleAddLiteral,
@@ -1556,6 +1619,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BooleanControlOutput": "Boolean Control Output",
 
     # Number
+    "AspectRatioSizeNodeOfUtils": "Aspect Ratio Size Selector",
     "MatchImageRatioToPreset": "Match Image Ratio to Standard Size",
     "FloatMultipleAddLiteral": "Float Multiple and Add Literal",
     "IntMultipleAddLiteral": "Int Multiple and Add Literal",
