@@ -217,3 +217,12 @@ This node is designed to generate videos from an image using Segmind's API. The 
 
 ## ModelsDownloaderOfUtils
 This node downloads models or LoRAs to a subdirectory. If the model already exists, it simply returns the model name in the corresponding location.
+
+## ImageScaleToTotalPixelsSwitch
+Modified the official ImageScaleToTotalPixels node by adding a switch. When turned off, it will return the input image directly.
+
+## ReferenceLatentSwitch
+Modified the official ReferenceLatent node by adding a switch. When turned off, it will return the input conditioning directly.
+
+## VAEEncoderSwitch
+Modified the official VAEEncoder node by adding a switch. When turned off, it will return None.

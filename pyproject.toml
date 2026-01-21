@@ -1,13 +1,12 @@
 [project]
 name = "comfyui-utils-nodes"
 description = "Nodes:LoadImageWithSwitch, ImageBatchOneOrMore, GenderControlOutput, ImageCompositeMaskedWithSwitch, ImageCompositeMaskedOneByOne, ColorCorrectOfUtils, SplitMask, MaskFastGrow, CheckpointLoaderSimpleWithSwitch, ImageResizeTo8x, MatchImageRatioToPreset, MaskFromFaceModel, MaskCoverFourCorners, DetectorForNSFW, DeepfaceAnalyzeFaceAttributes, VolcanoOutpainting, VolcanoImageEdit, ReplicateRequstNode etc."
-version = "1.4.1"
+version = "1.4.2"
 license = { file = "LICENSE" }
 dependencies = []
 
 [project.urls]
 Repository = "https://github.com/zhangp365/ComfyUI-utils-nodes"
-#  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
 PublisherId = "zhangp365"
