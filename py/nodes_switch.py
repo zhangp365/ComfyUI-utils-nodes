@@ -1,82 +1,73 @@
-
-import torch
 import math
 import comfy.utils
 import node_helpers
 from nodes import VAEEncode
+from comfy_api.latest import io
 from comfy_extras.nodes_post_processing import ImageScaleToTotalPixels
 from comfy_extras.nodes_edit_model import ReferenceLatent
 
+
 class ImageScaleToTotalPixelsSwitch(ImageScaleToTotalPixels):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "upscale_method": (ImageScaleToTotalPixels.upscale_methods,),
-                "megapixels": ("FLOAT", {"default": 1.0, "min": 0.01, "max": 16.0, "step": 0.01}),
-                "resolution_steps": ("INT", {"default": 1, "min": 1, "max": 256}),
-            },
-            "optional": {
-                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ImageScaleToTotalPixelsSwitch",
+            category="utils/switch",
+            inputs=[
+                io.Image.Input("image"),
+                io.Combo.Input("upscale_method", options=cls.upscale_methods),
+                io.Float.Input("megapixels", default=1.0, min=0.01, max=16.0, step=0.01),
+                io.Int.Input("resolution_steps", default=1, min=1, max=256),
+                io.Boolean.Input("enabled", default=True),
+            ],
+            outputs=[
+                io.Image.Output(),
+            ],
+        )
 
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "execute_switch"
-    CATEGORY = "utils/switch"
-
-    def execute_switch(self, image, upscale_method, megapixels, resolution_steps, enabled=True):
+    @classmethod
+    def execute(cls, image, upscale_method, megapixels, resolution_steps, enabled=True) -> io.NodeOutput:
         if not enabled:
-            return (image,)
-        
-        # Logic copied from ImageScaleToTotalPixels.execute
-        samples = image.movedim(-1,1)
-        total = megapixels * 1024 * 1024
+            return io.NodeOutput(image)
+        return super().execute(image, upscale_method, megapixels, resolution_steps)
 
-        scale_by = math.sqrt(total / (samples.shape[3] * samples.shape[2]))
-        width = round(samples.shape[3] * scale_by / resolution_steps) * resolution_steps
-        height = round(samples.shape[2] * scale_by / resolution_steps) * resolution_steps
-
-        s = comfy.utils.common_upscale(samples, int(width), int(height), upscale_method, "disabled")
-        s = s.movedim(1,-1)
-        return (s,)
 
 class ReferenceLatentSwitch(ReferenceLatent):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "conditioning": ("CONDITIONING",),
-            },
-            "optional": {
-                "latent": ("LATENT",),
-                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ReferenceLatentSwitch",
+            category="utils/switch",
+            description="ReferenceLatent with switch. When disabled, returns conditioning directly.",
+            inputs=[
+                io.Conditioning.Input("conditioning"),
+                io.Latent.Input("latent", optional=True),
+                io.Boolean.Input("enabled", default=True),
+            ],
+            outputs=[
+                io.Conditioning.Output(),
+            ]
+        )
 
-    RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "execute_switch"
-    CATEGORY = "utils/switch"
-
-    def execute_switch(self, conditioning, latent=None, enabled=True):
+    @classmethod
+    def execute(cls, conditioning, latent=None, enabled=True) -> io.NodeOutput:
         if not enabled:
-            return (conditioning,)
-        
-        # Logic copied from ReferenceLatent.execute
-        if latent is not None:
-            conditioning = node_helpers.conditioning_set_values(conditioning, {"reference_latents": [latent["samples"]]}, append=True)
-        return (conditioning,)
+            return io.NodeOutput(conditioning)
+        return super().execute(conditioning, latent)
+
 
 class VAEEncoderSwitch(VAEEncode):
     @classmethod
     def INPUT_TYPES(s):
-        base_inputs = super().INPUT_TYPES()
-        # Add enabled to optional if exists, or create optional
-        if "optional" not in base_inputs:
-            base_inputs["optional"] = {}
-        base_inputs["optional"]["enabled"] = ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"})
-        return base_inputs
+        return {
+            "required": {
+                "pixels": ("IMAGE",),
+                "vae": ("VAE",),
+            },
+            "optional": {
+                "enabled": ("BOOLEAN", {"default": True, "label_on": "enabled", "label_off": "disabled"}),
+            }
+        }
 
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode_switch"
@@ -84,9 +75,9 @@ class VAEEncoderSwitch(VAEEncode):
 
     def encode_switch(self, pixels, vae, enabled=True):
         if not enabled:
-            return (None,) # Bypass not fully possible for Image->Latent, return None
-        
-        return super().encode(vae, pixels)
+            return (None,)
+        return self.encode(vae, pixels)
+
 
 NODE_CLASS_MAPPINGS = {
     "ImageScaleToTotalPixelsSwitch": ImageScaleToTotalPixelsSwitch,
