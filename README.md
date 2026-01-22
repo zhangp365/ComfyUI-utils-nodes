@@ -143,7 +143,7 @@ This node is designed to generate a transition image between two images. The fir
 ## ImageMaskColorAverage
 This node is designed to calculate the average color of the image within the mask. It returns the decimal and hexadecimal values of the average color.
 
-## TorchCompileModelAdvanced
+## TorchCompileModelAdvancedOfUtils
 This node enables model compilation using torch.compile. It extends ComfyUI's original torch compile node by adding compile mode options and a toggle switch.
 
 ## DetectorForNSFW

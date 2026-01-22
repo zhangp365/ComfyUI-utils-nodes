@@ -1,6 +1,6 @@
 import torch
 
-class TorchCompileModelAdvanced:
+class TorchCompileModelAdvancedOfUtils:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": { "model": ("MODEL",),
@@ -22,8 +22,8 @@ class TorchCompileModelAdvanced:
         return (m, )
 
 NODE_CLASS_MAPPINGS = {
-    "TorchCompileModelAdvanced": TorchCompileModelAdvanced,
+    "TorchCompileModelAdvancedOfUtils": TorchCompileModelAdvancedOfUtils,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "TorchCompileModelAdvanced": "Torch Compile Model Advanced"
+    "TorchCompileModelAdvancedOfUtils": "Torch Compile Model Advanced"
 }
