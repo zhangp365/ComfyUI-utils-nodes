@@ -4,10 +4,11 @@
 # DetectorForNSFW 
 onnxruntime>=1.19.2
 
-# DeepfaceAnalyzeFaceAttributes: If you are not using this node, please remove the dependencies below. Otherwise, keep the specified versions as changing them may cause the node to malfunction.
-deepface==0.0.93
-ultralytics
-tf-keras==2.17.0
+# DeepfaceAnalyzeFaceAttributes: Since the dependent TensorFlow 2.17 is outdated, the following dependencies are no longer installed by default. If you need to use this node, please uncomment and install them manually.
+# Users who have previously installed this library are not affected.
+# deepface==0.0.93
+# ultralytics
+# tf-keras==2.17.0
 
 # Gemini_prompt_enhance nod
 google-generativeai>0.4.1

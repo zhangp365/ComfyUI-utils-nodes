@@ -1,5 +1,7 @@
 # Some Utils for ComfyUI
 
+> **Notice:** The face detection node depends on TensorFlow 2.17, which is now outdated and may cause compatibility issues. Therefore, it is no longer installed by default. If you need to use this node, please install it manually. Users who have previously installed this library are not affected.
+
 ## LoadImageWithSwitch
 Modified the official LoadImage node by adding a switch. When turned off, it will not load the image.
 
@@ -158,6 +160,8 @@ You can also adjust the confidence levels for various rules such as buttocks_exp
 The output_image includes the original image and the alternative image or the blank image. detect_result is the result of the detection with json format. filtered_image only includes the image after filtering, if it is just one image and nsfw, it raises an exception in the save_image node.
 
 ## DeepfaceAnalyzeFaceAttributes
+> **Notice:** The face detection node depends on TensorFlow 2.17, which is now outdated and may cause compatibility issues. Therefore, it is no longer installed by default. If you need to use this node, please refer to `requirements.txt` to install the dependencies manually. Users who have previously installed this library are not affected.
+
 This node integrates the [deepface](https://github.com/serengil/deepface) library to analyze face attributes (gender, race, emotion, age). It analyzes only the largest face in the image and supports processing one image at a time.
 <img src="assets/deepfaceAnalyzeFaceAttributes.png" width="100%"/>
 
